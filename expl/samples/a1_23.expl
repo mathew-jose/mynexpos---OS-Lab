@@ -1,0 +1,27 @@
+int main()
+{
+decl
+
+int temp,permission;
+str file;
+enddecl
+begin
+temp=exposcall("Write",-2,"File Name");
+temp=exposcall("Read",-1,file);
+
+
+while( file != "Shutdown" ) do
+	temp=exposcall("Write",-2,"Permission");
+	temp=exposcall("Read",-1,permission);
+	temp=exposcall("Create",file,permission);
+	temp=exposcall("Write",-2,"File Name");
+	temp=exposcall("Read",-1,file);
+endwhile;
+
+
+temp=exposcall("Shutdown");
+return 0;
+
+end
+}
+

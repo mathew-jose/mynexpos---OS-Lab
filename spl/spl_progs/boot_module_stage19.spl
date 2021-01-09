@@ -1,0 +1,189 @@
+//INIT
+loadi(65,7);
+loadi(66,8);
+
+//Shared Library
+loadi(63,13);
+loadi(64,14);
+
+//EXCEPTION
+loadi(2,15);
+loadi(3,16);
+
+//INT 10
+loadi(22,35);	
+loadi(23,36);
+
+//Timer
+loadi(4, 17);
+loadi(5, 18);
+
+//INT 7
+loadi(16,29);
+loadi(17,30);
+
+
+//Module 5 as Scheduler
+loadi(50,63);
+loadi(51,64);
+
+//Module 0
+loadi(40,53);
+loadi(41,54);
+
+//Module 4 as Device Manager
+loadi(48,61);
+loadi(49,62);
+
+
+//INT 6
+loadi(14,27);
+loadi(15,28);
+
+
+//Console Interrupt
+loadi(8,21);
+loadi(9,22);
+
+//Module 1 Process Manager
+loadi(42,55);	
+loadi(43,56);
+
+
+//Module 2 as Memory Manager
+loadi(44,57);	
+loadi(45,58);
+
+//Inode Table
+loadi(59,3);	
+loadi(60,4);
+
+
+//INT 9
+loadi(20,33);
+loadi(21,34);
+
+
+//Disk Interrupt
+loadi(6,19); 	
+loadi(7,20);
+
+//Disk Free List
+loadi(61,2);
+
+alias i R1;
+while( i < 83) do
+		[MEMORY_FREE_LIST + i] = 1;
+		i=i+1;
+endwhile; 
+
+while(i < 128 ) do
+		[MEMORY_FREE_LIST + i] = 0;
+		i=i+1;
+endwhile; 
+
+[MEMORY_FREE_LIST + 78] = 0;
+[MEMORY_FREE_LIST + 79] = 0;
+[MEMORY_FREE_LIST + 66] = 0;
+
+
+//WAIT_MEM_COUNT
+[SYSTEM_STATUS_TABLE+3] = 0;
+//MEM_FREE_COUNT	
+[SYSTEM_STATUS_TABLE+2] = 128-83;	
+
+
+
+[TERMINAL_STATUS_TABLE]=0;
+[DISK_STATUS_TABLE] = 0;
+
+
+PTBR=PAGE_TABLE_BASE+20;
+PTLR=10;
+
+
+
+//Library
+[PTBR+0] = 63;
+[PTBR+1] = "0100";
+[PTBR+2] = 64;
+[PTBR+3] = "0100";
+
+//Heap
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+
+//Code
+[PTBR+8] = 65;
+[PTBR+9] = "0100";
+[PTBR+10] = -1;
+[PTBR+11] = "0000";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//Stack
+[PTBR+16] = 76;
+[PTBR+17] = "0110";
+[PTBR+18] = 77;
+[PTBR+19] = "0110";
+
+//PID
+[PROCESS_TABLE + 16 + 1]=1;
+//STATE
+[PROCESS_TABLE + 16 + 4]=CREATED;
+//USER AREA PAGE NUMBER
+[PROCESS_TABLE + 16 + 11]=80;
+//UPTR
+[PROCESS_TABLE + 16 + 13] = 8*512;
+//KPTR
+[PROCESS_TABLE + 16 + 12] = 0;
+//PTBR AND PTLR
+[PROCESS_TABLE + 16 + 14] = PAGE_TABLE_BASE+20;
+[PROCESS_TABLE + + 16 + 15] = 10;
+
+[76 * 512]=[65*512 + 1];
+
+
+alias id R5;
+id=2;
+
+	while(id<16) do
+		[PROCESS_TABLE + id*16 + 4] = TERMINATED;
+		id = id+1;
+	endwhile;
+
+
+//Per Process Table
+id=496;
+	while(id<512) do
+		[ [PROCESS_TABLE + 16 + 11]*512 + id] = -1;
+		id = id+1;
+	endwhile;
+
+
+
+[DISK_MAP_TABLE + 10 + 0] = -1;
+[DISK_MAP_TABLE + 10 + 1] = -1;
+[DISK_MAP_TABLE + 10 + 2] = -1;
+[DISK_MAP_TABLE + 10 + 3] = -1;
+[DISK_MAP_TABLE + 10 + 4] = 7;
+[DISK_MAP_TABLE + 10 + 5] = 8;
+[DISK_MAP_TABLE + 10 + 6] = -1;
+[DISK_MAP_TABLE + 10 + 7] = -1;
+[DISK_MAP_TABLE + 10 + 8] = -1;
+[DISK_MAP_TABLE + 10 + 9] = -1;
+
+
+return;
+
+
+
+
+
+
+
+

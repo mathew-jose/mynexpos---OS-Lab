@@ -1,0 +1,131 @@
+
+
+alias currPID R10;
+currPID=[SYSTEM_STATUS_TABLE + 5*CORE  + 1];
+
+
+
+alias functionNo R1;
+functionNo= [[PTBR + 2*(SP-5)/512]*512 + (SP-5)%512];
+
+[PROCESS_TABLE +currPID*16 +13] = SP;
+SP = [PROCESS_TABLE +currPID*16 +11]*512 -1;
+
+backup;
+R1=1;
+call MOD_8;
+restore;
+
+//SemLock System Call
+if( functionNo == 19 ) then
+
+	[PROCESS_TABLE +currPID*16 +9] = 19;
+
+	alias id R3;
+	SP=[PROCESS_TABLE +currPID*16 +13];
+	id=[[PTBR + 2*(SP-4)/512]*512 + (SP-4)%512];
+	
+	if ( [[PROCESS_TABLE +currPID*16 +11]*512 + 496 + 2*id] != 1 || id < 0 || id > 7  ) then
+			
+			[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=-1;
+			[PROCESS_TABLE +currPID*16 +9] = 0;
+			[KERN_LOCK]=0;
+			ireturn;
+	endif;
+	
+	SP = [PROCESS_TABLE +currPID*16 +11]*512 -1;
+	alias semaphore_table_id R4;
+	
+	semaphore_table_id=[[PROCESS_TABLE +currPID*16 +11]*512 + 496 + 2*id + 1];
+	while( [SEMAPHORE_TABLE + semaphore_table_id*4] != -1 ) do
+		[PROCESS_TABLE +currPID*16 +4]=WAIT_SEMAPHORE;
+		[PROCESS_TABLE +currPID*16 +5]=semaphore_table_id;
+		
+		multipush(R1,R2);
+R1=4;
+R2=KERN_LOCK;
+call MOD_8;
+multipop(R1,R2);
+		backup;
+		call MOD_5;
+		restore;
+		multipush(R1);
+	R1=1;
+	call MOD_8;
+	multipop(R1);
+		multipop(R1,R2);
+		
+	endwhile;
+	
+	print currPID;
+	[SEMAPHORE_TABLE + semaphore_table_id*4] = [SYSTEM_STATUS_TABLE + 5*CORE  +1];
+	SP=[PROCESS_TABLE +currPID*16 +13];
+	[PROCESS_TABLE +currPID*16 +9] = 0;
+	[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=0;
+	[KERN_LOCK]=0;
+
+	
+	ireturn;
+endif;
+
+
+//SemUnLock System Call
+if( functionNo == 20 ) then
+	
+	[PROCESS_TABLE +currPID*16 +9] = 20;
+
+	
+	alias id R3;
+	SP=[PROCESS_TABLE +currPID*16 +13];
+	id=[[PTBR + 2*(SP-4)/512]*512 + (SP-4)%512];
+	
+	if ( [[PROCESS_TABLE +currPID*16 +11]*512 + 496 + 2*id] != 1 || id < 0 || id > 7  ) then
+			[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=-1;
+			[PROCESS_TABLE +currPID*16 +9] = 0;	
+			[KERN_LOCK]=0;
+			ireturn;
+	endif;
+	
+
+	SP = [PROCESS_TABLE +currPID*16 +11]*512 -1;
+	alias semaphore_table_id R5;
+	
+	semaphore_table_id=[[PROCESS_TABLE +currPID*16 +11]*512 + 496 + 2*id + 1];
+	if ( [SEMAPHORE_TABLE + 4*semaphore_table_id] != -1 ) then
+		if ( [SEMAPHORE_TABLE + 4*semaphore_table_id] != currPID) then 
+			SP=[PROCESS_TABLE +currPID*16 +13];
+			[PROCESS_TABLE +currPID*16 +9] = 0;
+			[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=-2;	
+			[KERN_LOCK]=0;
+			ireturn;
+		endif;
+		[SEMAPHORE_TABLE + 4*semaphore_table_id] = -1;
+		id =0;
+		while ( id < 16 ) do
+			if( [PROCESS_TABLE + id*16 + 5] == semaphore_table_id && [PROCESS_TABLE + id*16 + 4] == WAIT_SEMAPHORE )  then
+				[PROCESS_TABLE + id*16 + 4]=READY;
+			endif;
+		id=id+1;
+		endwhile;
+							
+	endif;	 
+
+
+	
+	SP=[PROCESS_TABLE +currPID*16 +13];
+	[PROCESS_TABLE +currPID*16 +9] = 0;
+	[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=0;	
+	[KERN_LOCK]=0;
+	ireturn;
+endif;
+
+
+
+
+
+
+
+
+
+
+ 

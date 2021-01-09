@@ -1,0 +1,33 @@
+int main()
+{
+decl
+
+int fd,temp,temp1,temp2,permission,i,j;
+str file,chr;
+enddecl
+begin
+	temp=exposcall("Write",-2,"File Name");
+	temp=exposcall("Read",-1,file);
+	temp=exposcall("Write",-2,"Permission");
+	temp=exposcall("Read",-1,permission);
+
+	temp=exposcall("Create",file,permission);
+
+	fd=exposcall("Open",file);
+	i=1;
+	while ( i < 1102 ) do
+	
+	temp=exposcall("Write",fd,i);
+	i=i+1;
+	endwhile;
+
+	
+	
+	temp = exposcall("Close",fd);
+
+
+return 0;
+
+end
+}
+

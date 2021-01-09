@@ -1,0 +1,56 @@
+
+alias functionNo R1;
+
+//ACQUIRE_KERNEL
+if ( functionNo == 1 ) then
+
+	if ( CORE == SECONDARY_CORE ) then
+		if ( ([SYSTEM_STATUS_TABLE + 5] != 0) || ([SYSTEM_STATUS_TABLE + 7] == 1) ) then
+
+			[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 4]= READY;
+			[KERN_LOCK]=0;
+			backup;
+			call MOD_5;
+			restore;
+			backup;
+			R1=1;
+			call MOD_8;
+			restore;
+		endif;
+	endif;
+	 while( tsl(KERN_LOCK) == 1 ) do
+    		
+    			continue;
+
+	endwhile;
+	return;
+endif;
+
+//ACQUIRE_SCHEDULER
+if ( functionNo == 2 ) then
+
+	 while( tsl(SCHED_LOCK) == 1 ) do
+    		continue;
+	endwhile; 
+	return;
+endif;
+
+//ACQUIRE_GLOCK
+if ( functionNo == 3 ) then
+
+	 while( tsl(GLOCK) == 1 ) do
+    		continue;
+	endwhile; 
+	return;
+endif;
+
+
+//RELEASE_LOCK
+if ( functionNo == 4 ) then
+
+	[R2]=0;
+	return;
+endif;
+
+
+

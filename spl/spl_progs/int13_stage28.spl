@@ -1,0 +1,123 @@
+
+
+
+alias functionNo R1;
+functionNo= [[PTBR + 2*(SP-5)/512]*512 + (SP-5)%512];
+
+[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +13] = SP;
+SP = [PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +11]*512 -1;
+
+
+backup;
+R1=1;
+call MOD_8;
+restore;
+
+
+
+if( functionNo == 17 ) then
+	
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +9] = 17;
+	alias i R3;
+
+	i = 496;
+	while( i < 512 ) do
+		if ( [[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 + 11]*512 + i] == -1 ) then	
+			break;
+		endif;
+		i=i+2;
+	endwhile;
+
+
+	if ( i == 512 ) then
+		
+		
+		[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +9] = 0;
+		SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +13];	 
+		[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=0;
+		[KERN_LOCK]=0;
+		ireturn;
+	endif;
+	
+	//ACQUIRE SEMAPHORE
+
+	backup;
+	R1=6;
+	R2=[SYSTEM_STATUS_TABLE + 5*CORE +1];
+	call MOD_0;
+
+	if( R0 == -1 ) then
+
+		restore;
+		
+		[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +9] = 0;
+		SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +13];	 
+		[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=-2;	
+		[KERN_LOCK]=0;
+		ireturn;
+	endif;
+
+	[[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*16 + 11]*512 + i] = 1;
+	[[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*16 + 11]*512 + i + 1] = R0;
+
+	restore;
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +9] = 0;	
+	SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +13];	 
+	[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]= (i - 496)/2;
+	[KERN_LOCK]=0;
+
+
+	ireturn;
+endif;
+
+
+if( functionNo == 18 ) then
+
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +9] = 18;
+
+	
+	alias id R3;
+	SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +13];
+	id=[[PTBR + 2*(SP-4)/512]*512 + (SP-4)%512];
+
+	if ( id < 0 || id > 7 || [[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +11]*512 + 496 + 2*id] != 1) then
+			
+			[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=-1;
+			[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +9] = 0;
+			[KERN_LOCK]=0;	
+			ireturn;
+	endif;
+	
+	SP = [PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +11]*512 -1;
+	backup;
+
+	//RELEASE SEMAPHORE
+	R1 = 7;
+	R2 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+	R3 = [[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*16 + 11]*512 + 496 + 2*id + 1];
+	call MOD_0;
+	restore;
+	
+	
+	
+	[[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*16 + 11]*512 + 496 + 2*id]=-1;
+	[[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*16 + 11]*512 + 496 + 2*id +1]=-1;
+	
+	SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +13];
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE + 5*CORE + 1]*16 +9] = 0;
+	[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=0;
+	[KERN_LOCK]=0;	
+	ireturn;
+endif;
+
+
+
+
+
+
+
+
+
+
+
+ 

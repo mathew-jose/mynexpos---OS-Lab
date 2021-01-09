@@ -1,0 +1,311 @@
+alias functionNo R1;
+alias p_table R7;
+alias page_table R8;
+alias disk_table R9;
+
+alias swap_count R10;
+alias currentPID R11;
+alias paging_status R12;
+alias curr_page R13;
+
+currentPID=SYSTEM_STATUS_TABLE + 1;
+swap_count=SYSTEM_STATUS_TABLE + 4;
+paging_status=SYSTEM_STATUS_TABLE + 5;
+
+alias temp R14;
+
+if ( functionNo == 1 ) then
+
+	alias i R2;
+	i=3;
+
+	while ( i < 15 ) do
+		p_table=PROCESS_TABLE + 16*i;
+		if ( ([p_table + 6] == 0) &&   ([p_table + 4] == WAIT_PROCESS) ) then
+			break;
+		endif;
+	i=i+1;
+	endwhile;
+	
+	if ( i == 15 ) then
+	
+		i=3;
+		while ( i < 15 ) do
+			p_table=PROCESS_TABLE + 16*i;
+			if ( ([p_table + 6] == 0) &&   ([p_table + 4] == WAIT_SEMAPHORE) ) then
+				break;
+			endif;
+		i=i+1;
+		endwhile;
+	endif;
+	
+	if ( i == 15 ) then
+	
+		i=3;
+		alias max R3;
+		alias index R4;
+		max=0;
+		index=15;
+		while ( i < 15  ) do
+			p_table=PROCESS_TABLE + 16*i;
+			if ( ([p_table + 4] != RUNNING) && ([p_table + 4] != TERMINATED) ) then
+				if ( ([p_table + 4] != ALLOCATED) && ([p_table + 6] != 1) ) then
+					if ( [p_table] > max ) then
+						
+						max = [p_table];
+						index=i;
+					endif;
+				endif;
+			endif;
+		i=i+1;
+		endwhile;
+		i=index;
+	endif;
+	if ( i == 15 ) then
+		[paging_status] = 0;
+		return;
+	endif;
+	
+	p_table=PROCESS_TABLE + 16*i;
+	[p_table] = 0;
+	
+	page_table=PAGE_TABLE_BASE + 20*i;
+	disk_table=DISK_MAP_TABLE + 10*i;
+	
+	alias j R5;
+	j=8;
+	while ( j < 16 ) do
+		if ( [page_table + j] != -1 ) then
+			backup;
+			R1=2;
+			R2=[page_table + j];
+			call MOD_2;
+			restore;
+		
+		endif;
+		
+	[page_table + j]=-1;	
+	[page_table + j + 1]="0000";
+	j=j+2;
+	endwhile;
+
+	j=4;
+	while ( j < 8 ) do
+			
+		curr_page=page_table + j;
+		if( ([curr_page] != -1 ) && ([MEMORY_FREE_LIST + [curr_page]] == 1)) then
+
+
+			R1=6;
+			call MOD_2;
+			
+
+			backup;
+			[disk_table + (j/2)]=R0;
+			R1=1;
+			R2=[SYSTEM_STATUS_TABLE + 1];
+			R3= [curr_page]; 
+			R4=R0;
+			call MOD_4;
+			restore;
+
+
+			backup;
+			R1=2;
+			R2=[curr_page];
+			call MOD_2;
+			restore;
+			
+
+	
+	
+			[curr_page]=-1;	
+			[curr_page + 1]="0000";
+	
+		endif;
+	j=j+2;
+	endwhile;
+
+	j=16;
+	while ( j < 20 ) do
+
+		curr_page=page_table + j;
+
+
+			R1=6;
+			call MOD_2;
+
+			backup;
+			[disk_table + (j/2)]=R0;
+			R1=1;
+			R2=[currentPID];
+			R3= [curr_page]; 
+			R4=R0;
+			call MOD_4;
+			restore;
+			backup;
+			R1=2;
+			R2=[curr_page];
+			call MOD_2;
+			restore;
+
+	
+	
+			[curr_page]=-1;	
+			[curr_page + 1]="0000";
+		
+	
+	j=j+2;
+	endwhile;
+	
+	
+	[p_table + 6] = 1;
+	[swap_count] = [swap_count] + 1;
+	[paging_status]=0;
+	return;
+
+endif;
+
+
+
+
+
+
+if ( functionNo == 2 ) then
+
+	alias i R2;
+	alias max R3;
+	alias index R4;
+	alias j R5;
+	max=0;
+	index=16;
+	
+	
+	
+	i=3;
+	max=0;
+	index=15;
+	while ( i < 15 ) do
+			p_table=PROCESS_TABLE + 16*i;
+			if ( [p_table + 6] == 1 ) then
+				if ( [p_table] > max ) then
+					max = [p_table];
+					index=i;
+				endif;
+			endif;
+
+	i=i+1;
+	endwhile;
+		
+	if (index == 15 ) then
+		[paging_status] = 0;
+		return;
+	endif;	
+	i=index;
+	p_table = PROCESS_TABLE + 16*i;
+	[p_table]=0;
+	
+	j=2;
+	page_table=PAGE_TABLE_BASE + 20*i;
+	
+	
+	disk_table=DISK_MAP_TABLE + 10*i;
+	
+	
+	while ( j < 4 ) do
+	
+		if ( [disk_table + j] != -1 ) then
+			
+			multipush(R4,R5);
+			R1=1;
+			call MOD_2;
+			multipop(R4,R5);
+			[page_table + 2*j]=R0;
+			
+			backup;
+			R1=2;
+			R2=[currentPID];
+			R3= [page_table + 2*j]; 
+			R4=[disk_table + j];
+			call MOD_4;
+			restore;
+			
+			
+			
+			backup;
+			R1=4;
+			R2=[disk_table + j];
+			call MOD_2;
+			restore;
+			
+
+			[page_table + 2*j + 1]="0110";
+			[disk_table + j]=-1;
+		
+		
+		endif;
+	
+	
+	
+	j=j+1;
+	endwhile;
+	
+	j=8;
+	while ( j < 10 ) do
+	
+			multipush(R4,R5);
+			R1=1;
+			call MOD_2;
+			multipop(R4,R5);
+			
+			[page_table + 2*j]=R0;
+			
+			
+			backup;
+			R1=2;
+			R2=[currentPID];
+			R3= [page_table + 2*j]; 
+			R4=[disk_table + j];
+			call MOD_4;
+			restore;
+			
+			backup;
+			R1=4;
+			R2=[disk_table + j];
+			call MOD_2;
+			restore;
+			
+
+			[page_table + 2*j + 1]="0110";
+			[disk_table + j]=-1;
+		
+		
+
+	
+	
+	
+	j=j+1;
+	endwhile;
+	
+	[p_table + 6]=0;
+	[swap_count] = [swap_count] - 1;
+	[paging_status]=0;
+	return;
+		
+		
+endif;	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

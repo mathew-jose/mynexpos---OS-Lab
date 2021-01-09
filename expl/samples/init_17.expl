@@ -1,0 +1,21 @@
+int main()
+{
+decl
+    int temp,num,num2;
+    str filename;
+enddecl
+begin
+    num=1;
+    	 temp = exposcall ( "Write" , -2,"New File" );
+    	 temp = exposcall ( "Read" , -1,filename );
+	 temp = exposcall ( "Exec", filename ); 
+    while ( num <= 100 ) do
+	if((num%2)==0 ) then
+	 temp = exposcall ( "Write" , -2,"Process 1" );
+	 temp = exposcall ( "Write" , -2,num );
+	endif;
+	num = num + 1;
+    endwhile;
+    return 0;
+end
+}

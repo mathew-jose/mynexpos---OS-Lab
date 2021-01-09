@@ -1,0 +1,35 @@
+int main()
+{
+decl
+    int temp,num,num2,j,k,i,flag,p,q;
+enddecl
+begin
+    num=0;
+    i=2;
+    while ( num < 100) do
+	j=2;
+	flag=0;
+	p=i/2;
+	while(j<=p) do
+	k=i%j;
+	if(k!=0) then
+		j=j+1;
+	else
+		flag=1;
+		break;
+	endif;
+	endwhile;
+
+	if((j>p==0)  ) then
+		if(flag==0) then 
+			 temp = exposcall ( "Write" , -2,"Process 3" );
+			 temp = exposcall ( "Write" , -2,i );
+			 num=num+1;
+			endif;
+	endif;	
+    	i = i + 1;	
+	endwhile;
+
+    return 0;
+end
+}

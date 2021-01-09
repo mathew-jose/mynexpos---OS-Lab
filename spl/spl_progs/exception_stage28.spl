@@ -1,0 +1,91 @@
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE + 5*CORE +1]*16+9]=-1;
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE + 5*CORE +1]*16+13]=SP;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE + 5*CORE +1]*16+11]*512-1;
+
+backup;
+R1=1;
+call MOD_8;
+restore;
+backup;
+
+
+multipush(EIP);
+
+if(EC == 1 || EC == 2 || EC == 3) then
+	print "Error Found";
+	breakpoint;
+	R1 = 3;
+	R2=[SYSTEM_STATUS_TABLE + 5*CORE +1];
+	backup;
+	call MOD_1;
+	restore;
+	[KERN_LOCK]=0;
+	call MOD_5;
+	backup;
+	R1=1;
+	call MOD_8;
+	restore;
+endif;
+if ( EC == 0 ) then
+if(( EPN == 4 || EPN == 5 || EPN == 6 || EPN == 7 ) ) then
+		
+		backup;
+		multipush(EPN);
+		R1 = GET_CODE_PAGE;
+		R2 = [DISK_MAP_TABLE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 10) + EPN];
+		R3=[SYSTEM_STATUS_TABLE + 5*CORE + 1] ;
+		
+		call MOD_2;
+		multipop(EPN);
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 20) + (EPN * 2)] = R0;
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1] * 20) + (EPN * 2) + 1] = "0100";
+		restore;
+	endif;
+
+if(EPN == 2 || EPN == 3 ) then
+		backup;
+		multipush(EPN);
+		R1 = GET_FREE_PAGE;
+		call MOD_2;
+		multipop(EPN);
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*20) + 4] = R0;
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*20) + 5] = "0110";
+		restore;
+		
+		backup;
+		multipush(EPN);
+		R1 = GET_FREE_PAGE;
+		call MOD_2;
+		multipop(EPN);
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*20) + 6] = R0;
+		[PAGE_TABLE_BASE + ([SYSTEM_STATUS_TABLE + 5*CORE + 1]*20) + 7] = "0110";
+		restore; 
+endif;
+endif;
+
+[KERN_LOCK]=0;
+multipop(EIP);
+restore;
+
+[PROCESS_TABLE+[SYSTEM_STATUS_TABLE + 5*CORE +1]*16+9]=0;
+SP=[PROCESS_TABLE+[SYSTEM_STATUS_TABLE + 5*CORE +1]*16+13];
+SP=SP+1;
+
+[ [PTBR + 2*(SP/512)]*512  + SP%512]=EIP;
+
+ireturn;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

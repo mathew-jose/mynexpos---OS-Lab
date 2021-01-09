@@ -1,0 +1,95 @@
+
+alias currentPID R0;
+currentPID=[SYSTEM_STATUS_TABLE+1];
+multipush(BP);
+
+alias current_process R1;
+current_process =PROCESS_TABLE + currentPID*16;
+
+alias flag R10;
+[current_process + 12] = SP%512;		   
+[current_process + 14] = PTBR;
+[current_process + 15] = PTLR;
+
+
+alias next R2;
+alias nextPID R3;
+
+next=currentPID+1;
+if (next==15 || next==16) then
+	next=0;
+endif;
+while (next<15) do
+	
+	if ( [PROCESS_TABLE + (next * 16) + 6] == 0) then
+		if(([PROCESS_TABLE + (next * 16) + 4] == CREATED) || ([PROCESS_TABLE + (next * 16) + 4] == READY) ) then
+		
+			nextPID = next;
+
+			break;
+		endif;
+		if(next==currentPID) then
+			nextPID=currentPID;
+		endif;
+
+		
+	endif;
+	
+	next=next+1;
+	if (next==15) then
+		next=0;	
+	endif;
+
+endwhile;
+
+if( nextPID != currentPID ) then
+		[PAGE_TABLE_BASE + 2]=[PAGE_TABLE_BASE + 2]+1;	
+
+endif;	
+
+
+if ( [SYSTEM_STATUS_TABLE + 5] != 0 ) then
+
+
+	if( [PROCESS_TABLE + 16*15 + 4] != READY ) then
+		if( [PROCESS_TABLE + 16*15 + 4] != CREATED ) then
+				if( [PROCESS_TABLE + 16*15 + 4] != RUNNING ) then
+					nextPID=0;
+					
+					
+						
+				
+				else
+					nextPID=15;
+				endif;
+		else
+					nextPID=15;
+		endif;
+	else
+					nextPID=15;		
+	endif;
+	
+
+	
+
+endif;
+
+alias next_process R4;
+next_process = PROCESS_TABLE + (nextPID*16);
+SP = [next_process  + 11] * 512 + [next_process  + 12];
+PTBR = [next_process  + 14];
+PTLR = [next_process  + 15];
+[SYSTEM_STATUS_TABLE + 1] = nextPID;
+
+if([next_process + 4] == CREATED) then
+	SP = [next_process + 13];
+	BP = [[next_process + 11]*512];
+	[next_process + 4] = RUNNING;
+	[next_process + 9] = 0;
+	
+	ireturn;
+endif;
+[next_process + 4] = RUNNING;
+multipop(BP);
+return;
+

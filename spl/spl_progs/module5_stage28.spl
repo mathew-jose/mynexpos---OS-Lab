@@ -1,0 +1,143 @@
+backup;
+backup;
+R1=2;
+call MOD_8;
+restore;
+
+
+alias currentPID R0;
+currentPID=[SYSTEM_STATUS_TABLE + 5*CORE +1];
+multipush(BP);
+
+alias current_process R1;
+current_process =PROCESS_TABLE + currentPID*16;
+
+alias flag R10;
+[current_process + 12] = SP%512;		   
+[current_process + 14] = PTBR;
+[current_process + 15] = PTLR;
+
+
+alias next R2;
+alias nextPID R3;
+
+
+if ( CORE == 0 ) then
+	next=currentPID+1;
+	if (next==16) then
+		next=0;
+	endif;
+	while (next<16) do
+		if ( next != 14 && ([PROCESS_TABLE + (next * 16) + 6] == 0) ) then
+		
+			if( (next != [SYSTEM_STATUS_TABLE  + 6]) && (([PROCESS_TABLE + (next * 16) + 4] == CREATED) || ([PROCESS_TABLE + (next * 16) + 4] == READY)) ) then
+				
+				nextPID = next;
+				break;
+			endif;
+			if(next==currentPID) then
+				nextPID=currentPID;
+				break;
+
+			endif;
+
+		
+		endif;
+		
+		next=next+1;
+		if (next==16) then
+			next=0;	
+		endif;
+
+	endwhile;
+
+	if ( [SYSTEM_STATUS_TABLE + 5] != 0 ) then
+		if( [PROCESS_TABLE + 16*15 + 4] != READY ) then
+			if( [PROCESS_TABLE + 16*15 + 4] != CREATED ) then
+				if( [PROCESS_TABLE + 16*15 + 4] != RUNNING ) then
+						nextPID=0;
+				
+				else
+						nextPID=15;
+				endif;
+			else
+						nextPID=15;
+			endif;
+		else
+						nextPID=15;		
+		endif;
+	endif;
+	
+	if ( ([SYSTEM_STATUS_TABLE + 6] != 14) && ([SYSTEM_STATUS_TABLE + 7] == 1) ) then
+		nextPID=0;
+	endif;
+	[SYSTEM_STATUS_TABLE + 1]=nextPID;
+	
+else 
+
+	next=currentPID+1;
+	if ( next==16) then
+		next=0;
+	endif;
+	
+	while (next<16) do
+		if ( (next != 0) && (next != 1) && (next != 2) && (next != 15) && ([PROCESS_TABLE + (next * 16) + 6] == 0) ) then
+			if( (next != [SYSTEM_STATUS_TABLE  + 1]) && (([PROCESS_TABLE + (next * 16) + 4] == CREATED) || ([PROCESS_TABLE + (next * 16) + 4] == READY)) ) then
+				
+				nextPID = next;
+
+				break;
+			endif;
+			if(next==currentPID) then
+				nextPID=currentPID;
+				break;
+			endif;
+
+		
+		endif;
+		
+		next=next+1;
+		if (next==16) then
+			next=0;	
+		endif;
+
+	endwhile;
+
+	
+	
+	if ( ([SYSTEM_STATUS_TABLE + 7] == 1) || ([SYSTEM_STATUS_TABLE + 5] != 0) ) then
+		nextPID=14;
+
+	endif;
+	[SYSTEM_STATUS_TABLE +6] = nextPID;
+
+endif;
+
+
+
+
+
+alias next_process R4;
+next_process = PROCESS_TABLE + (nextPID*16);
+SP = [next_process  + 11] * 512 + [next_process  + 12];
+PTBR = [next_process  + 14];
+PTLR = [next_process  + 15];
+[SYSTEM_STATUS_TABLE + 5*CORE  + 1] = nextPID;
+
+
+if([next_process + 4] == CREATED) then
+	[SCHED_LOCK]=0;
+
+	SP = [next_process + 13];
+	BP = [[next_process + 11]*512];
+	[next_process + 4] = RUNNING;
+	[next_process + 9] = 0;
+
+	ireturn;
+endif;
+[next_process + 4] = RUNNING;
+multipop(BP);
+[SCHED_LOCK]=0;
+restore;
+return;
+

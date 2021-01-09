@@ -1,0 +1,147 @@
+
+//MODULE 7
+loadi(54,67);
+loadi(55,68);
+
+//Load Idle Blocks From Disks 11 and 12
+loadi(69,11);
+
+//Secondary Core
+loadi(128,512);
+
+
+//MODULE 8
+loadi(132,516);
+loadi(133,517);
+
+
+
+
+//Shared Library
+loadi(63,13);
+loadi(64,14);
+
+
+SP=76*512-1;
+
+call MOD_7;
+
+//Module 6
+loadi(52,65);
+loadi(53,66);
+
+[SYSTEM_STATUS_TABLE + 4]=0;
+[SYSTEM_STATUS_TABLE + 5]=0;
+
+
+
+PTBR=PAGE_TABLE_BASE;
+PTLR=10;
+
+//Library
+[PTBR+0] = -1;
+[PTBR+1] = -1;
+[PTBR+2] = -1;
+[PTBR+3] = 0;
+
+//Heap
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+
+//Code
+[PTBR+8] = 69;
+[PTBR+9] = "0100";
+[PTBR+10] = -1;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//Stack
+[PTBR+16] = 70;
+[PTBR+17] = "0110";
+[PTBR+18] = -1;
+[PTBR+19] = "0000";
+
+[PROCESS_TABLE] = 0;	
+[PROCESS_TABLE+1] = 0;	
+[PROCESS_TABLE+3] = 0;	
+[PROCESS_TABLE+4] = RUNNING;	
+[PROCESS_TABLE+11] = 76;	
+[PROCESS_TABLE+12] = 0;		
+[PROCESS_TABLE+13] = 8*512 ;	
+[PROCESS_TABLE+14] = PAGE_TABLE_BASE;      
+[PROCESS_TABLE+15] = 10;	
+
+
+[SYSTEM_STATUS_TABLE + 1] = 0;
+[70 * 512] = [69 * 512 + 1];
+SP = 8*512;
+
+PTBR=PAGE_TABLE_BASE + 20*15;
+
+//Library
+[PTBR+0] = -1;
+[PTBR+1] = -1;
+[PTBR+2] = -1;
+[PTBR+3] = -1;
+
+//Heap
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+
+//Code
+[PTBR+8] = 69;
+[PTBR+9] = "0100";
+[PTBR+10] = -1;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//Stack
+[PTBR+16] = 81;
+[PTBR+17] = "0110";
+[PTBR+18] = -1;
+[PTBR+19] = "0000";
+
+alias p_table R1;
+p_table=PROCESS_TABLE + 15*16;
+
+[p_table] = 0;
+[p_table + 1] = 15;	
+[p_table +4] = CREATED;	
+[p_table +11] = 82;	
+[p_table +12] = 0;		
+[p_table +13] = 8*512 ;	
+[p_table +14] = PTBR;      
+[p_table +15] = PTLR;
+[81*512] = [69*512 +1];
+
+
+[KERN_LOCK]=0;
+[SCHED_LOCK]=0;
+
+[SYSTEM_STATUS_TABLE + 6]=14;
+[SYSTEM_STATUS_TABLE + 7]=0;
+
+start;
+PTBR=PAGE_TABLE_BASE;
+PTLR=10;
+
+SP = 8*512;
+ireturn;
+
+
+
+
+
+
+
+

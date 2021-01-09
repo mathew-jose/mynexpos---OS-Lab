@@ -1,0 +1,199 @@
+
+alias p_table R11;
+p_table = PROCESS_TABLE + [SYSTEM_STATUS_TABLE  + 5*CORE + 1]*16;
+
+[p_table + 9]=6;
+[p_table + 13]=SP;
+
+
+alias fd R1;
+alias userSP R2;
+userSP=SP;
+fd = [[PTBR + 2*((SP-4)/512)]*512 + ((SP-4)%512)];
+
+
+alias word R13;
+word=[[PTBR + 2*((SP-3)/512)]*512 + ((SP-3)%512)];
+
+
+SP=[p_table + 11]*512 -1;
+backup;
+R1=1;
+call MOD_8;
+restore;
+
+
+if ( fd == -2 ) then
+
+	//Terminal Write
+	backup;
+	R1=3;
+	R2=[SYSTEM_STATUS_TABLE  + 5*CORE + 1];
+	R3=word;
+	call MOD_4;
+	restore;
+	
+	
+	[p_table + 9]=0;
+	SP=[p_table + 13];
+	[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = 0;
+	[KERN_LOCK]=0;
+	ireturn;
+	
+else
+	alias page R4;
+	page=[p_table + 11]*512;
+	if ( fd < 0 || fd > 7) then
+	
+		
+		[p_table + 9]=0;
+		SP=[p_table + 13];
+ 		[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -1;
+ 		[KERN_LOCK]=0;
+ 		ireturn;
+ 	endif;
+ 	if( [page + 496 + 2*fd] != FILE ) then
+ 		
+ 		
+ 		[p_table + 9]=0;
+		SP=[p_table + 13];
+ 		[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -1;
+ 		[KERN_LOCK]=0;
+ 		ireturn;
+ 	endif;
+ 	
+ 	alias index R5;
+ 	
+ 	index=[OPEN_FILE_TABLE + 4*[page + 496 + 2*fd +1]];
+ 	
+ 	alias open_index R6;
+ 	open_index=[page + 496 + 2*fd +1];
+ 	
+ 	if( ( [p_table + 3] != 1 ) && ( [p_table + 3] != [INODE_TABLE + index*16 + 3] ) ) then
+ 		if ( [ INODE_TABLE + index*16 + 4 ] == 0 ) then
+ 			
+ 			[p_table + 9]=0;
+			SP=[p_table + 13];
+ 			[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -3;
+ 			[KERN_LOCK]=0;
+ 			ireturn;
+ 		endif;
+ 	endif;	
+ 	
+ 	
+ 	
+
+	multipush(R1,R2,R3,R4,R5,R11);
+	if (index == -1 ) then
+		breakpoint;
+	endif;
+ 	R1=4;
+ 	R2=[SYSTEM_STATUS_TABLE  + 5*CORE + 1];
+ 	R3=index;
+ 	call MOD_0;
+ 	multipop(R1,R2,R3,R4,R5,R11);
+ 	
+ 	
+ 	
+ 	if ( R0 == -1 ) then
+ 		
+ 		[p_table + 9]=0;
+		SP=[p_table + 13];
+ 		[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -1;
+ 		[KERN_LOCK]=0;
+ 		ireturn;
+ 	endif;
+
+ 	
+ 	alias lseek R7;
+ 	lseek=[OPEN_FILE_TABLE + 4*open_index + 2];
+ 	
+ 	if ( lseek == MAX_FILE_SIZE ) then
+ 			backup;
+ 			R1=5;
+			R2=[SYSTEM_STATUS_TABLE  + 5*CORE + 1];
+			R3=index;
+			call MOD_0;
+			restore;
+			
+			
+			[p_table + 9]=0;
+			SP=[p_table + 13];
+ 			[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -2;
+ 			[KERN_LOCK]=0;
+ 			
+ 			ireturn;
+ 	endif;
+ 	
+ 	if ( ( lseek % 512 == 0 ) && ( lseek == [INODE_TABLE + index*16 + 2] ) ) then
+		multipush(R1,R2,R3,R4,R5,R6,R7,R11);
+ 		R1=3;
+ 		call MOD_2;
+		multipop(R1,R2,R3,R4,R5,R6,R7,R11);		
+ 		
+ 		if ( R0 == -1 ) then
+
+ 			backup;
+ 			R1=5;
+			R2=[SYSTEM_STATUS_TABLE  + 5*CORE + 1];
+			R3=index;
+			call MOD_0;
+			restore;
+			
+			
+			[p_table + 9]=0;
+			SP=[p_table + 13];
+ 			[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -2;
+ 			[KERN_LOCK]=0;
+ 			ireturn;
+ 		endif;
+		
+ 		[INODE_TABLE + index*16 + 8 + (lseek/512)]=R0;
+ 	
+ 		
+ 	endif;
+ 	
+ 	alias disk_block R8;
+ 	alias pos R9;
+ 	disk_block=[INODE_TABLE + index*16 + 8 + (lseek/512)]; 
+ 	pos=lseek%512;
+ 	backup;
+ 	R1=1;
+ 	R2=disk_block;
+ 	R3=pos;
+ 	R4=word;
+
+ 	call MOD_3;
+ 				
+
+ 	restore;
+ 	
+ 	if ( lseek == [INODE_TABLE + index*16 + 2] ) then
+ 	
+ 		[INODE_TABLE + index*16 + 2] = [INODE_TABLE + index*16 + 2] + 1;
+ 		[ROOT_FILE + 8*index + 1] = [ROOT_FILE + 8*index + 1] + 1; 
+ 	endif;
+ 	
+ 	[OPEN_FILE_TABLE + 4*open_index + 2] = lseek + 1;
+
+	backup;
+	R1=5;
+	R2=[SYSTEM_STATUS_TABLE  + 5*CORE + 1];
+	R3=index;
+	call MOD_0;
+	restore;
+
+
+	
+	[p_table + 9]=0;
+	SP=[p_table + 13];
+	[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = 0;
+	[KERN_LOCK]=0;
+	
+	ireturn;
+
+endif;
+ 	
+ 	
+ 	
+

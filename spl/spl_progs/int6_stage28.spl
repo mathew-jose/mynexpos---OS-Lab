@@ -1,0 +1,168 @@
+
+
+
+alias currPID R12;
+currPID=[SYSTEM_STATUS_TABLE  + 5*CORE + 1];
+[PROCESS_TABLE + currPID*16 + 9]=6;
+[PROCESS_TABLE + currPID*16 + 13]=SP;
+
+
+
+
+
+alias fd R1;
+alias userSP R2;
+userSP=SP;
+fd = [[PTBR + 2*((SP-4)/512)]*512 + ((SP-4)%512)];
+
+
+alias word R3;
+
+word=[[PTBR + 2*((SP-3)/512)]*512 + ((SP-3)%512)];
+
+
+SP=[PROCESS_TABLE + currPID*16 + 11]*512 -1;
+
+backup;
+R1=1;
+call MOD_8;
+restore;
+
+if ( fd == -1 ) then
+
+	backup;
+	R1=4;
+	R2=currPID;
+	R3=word;
+	call MOD_4;
+	restore;
+	[PROCESS_TABLE + currPID*16 + 9]=0;
+	SP=[PROCESS_TABLE + currPID*16 + 13];
+	[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = 0;
+	[KERN_LOCK]=0;
+	
+	ireturn;
+	
+else
+	alias page R4;
+	page=[PROCESS_TABLE + currPID*16 + 11]*512;
+	if ( fd < 0 || fd > 7) then
+		
+		[PROCESS_TABLE + currPID*16 + 9]=0;
+		SP=[PROCESS_TABLE + currPID*16 + 13];
+ 		[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -1;
+ 		[KERN_LOCK]=0;
+ 		ireturn;
+ 	endif;
+ 	if( [page + 496 + 2*fd] != FILE ) then
+ 		
+ 		[PROCESS_TABLE + currPID*16 + 9]=0;
+		SP=[PROCESS_TABLE + currPID*16 + 13];
+ 		[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -1;
+ 		[KERN_LOCK]=0;
+ 		ireturn;
+ 	endif;
+ 	
+ 	
+ 	alias index R5;
+ 	
+ 	index=[OPEN_FILE_TABLE + 4*[page + 496 + 2*fd +1]];
+
+	multipush(R1,R2,R3,R4,R5);
+ 	R1=4;
+ 	R2=currPID;
+ 	R3=index;
+ 	call MOD_0;
+	multipop(R1,R2,R3,R4,R5);
+
+ 	
+ 	alias lseek R6;
+ 	lseek=[OPEN_FILE_TABLE + 4*[page + 496 + 2*fd +1] + 2];
+
+ 	
+ 	alias log_add R7;
+ 	alias phy_add R10;
+ 	log_add=[[PTBR + 2*((userSP-3)/512)]*512 + ((userSP-3)%512)]; 
+ 	phy_add=[PTBR + 2*(log_add/512)]*512 + log_add%512;
+ 	if( index == INODE_ROOT ) then
+ 		if ( lseek == 480 ) then
+ 			
+ 			
+ 			backup;
+ 			R1=5;
+			R2=currPID;
+			R3=index;
+			call MOD_0;
+			restore;
+			
+			
+			
+			[PROCESS_TABLE + currPID*16 + 9]=0;
+			SP=[PROCESS_TABLE + currPID*16 + 13];
+ 			[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -2;
+ 			[KERN_LOCK]=0;
+ 			ireturn;		
+ 		
+ 		else
+ 			[phy_add]=[ROOT_FILE + lseek];
+ 			[OPEN_FILE_TABLE + 4*[page + 496 + 2*fd +1] + 2]=lseek + 1;
+ 		endif;
+ 	else
+ 			if ( lseek >= [INODE_TABLE + 16*index + 2] ) then
+ 				backup;
+ 				R1=5;
+				R2=currPID;
+				R3=index;
+				call MOD_0;
+				restore;
+			
+				
+			
+				[PROCESS_TABLE + currPID*16 + 9]=0;
+				SP=[PROCESS_TABLE + currPID*16 + 13];
+ 				[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = -2;
+ 				[KERN_LOCK]=0;
+ 				ireturn;	
+ 			else
+
+ 				alias disk_block R8;
+ 				alias pos R9;
+ 				disk_block=[INODE_TABLE + 16*index + 8 + (lseek/512)];
+ 				pos=(lseek%512);
+ 				backup;
+ 				R1=2;
+ 				R2=disk_block;
+ 				R3=pos;
+ 				R4=[PTBR + 2*(log_add/512)]*512 + log_add%512;
+ 				call MOD_3;
+ 				
+
+ 				restore;
+
+
+ 			endif;
+ 			[OPEN_FILE_TABLE + 4*[page + 496 + 2*fd +1] + 2]=lseek+1; 
+
+ 	endif;
+ 	
+ 	
+
+backup;
+R1=5;
+R2=currPID;
+R3=index;
+call MOD_0;
+restore;
+
+
+[PROCESS_TABLE + currPID*16 + 9]=0;
+SP=[PROCESS_TABLE + currPID*16 + 13];
+[[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512)] = 0;
+[KERN_LOCK]=0;
+ireturn;
+
+endif;
+ 	
+ 	
+ 	
+

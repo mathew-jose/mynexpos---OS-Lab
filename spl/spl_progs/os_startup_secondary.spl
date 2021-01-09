@@ -1,0 +1,57 @@
+
+PTBR=PAGE_TABLE_BASE + 20*14;
+PTLR=10;
+
+//Library
+[PTBR+0] = -1;
+[PTBR+1] = -1;
+[PTBR+2] = -1;
+[PTBR+3] = -1;
+
+//Heap
+[PTBR+4] = -1;
+[PTBR+5] = "0000";
+[PTBR+6] = -1;
+[PTBR+7] = "0000";
+
+//Code
+[PTBR+8] = 69;
+[PTBR+9] = "0100";
+[PTBR+10] = -1;
+[PTBR+11] = "0100";
+[PTBR+12] = -1;
+[PTBR+13] = "0000";
+[PTBR+14] = -1;
+[PTBR+15] = "0000";
+
+//Stack
+[PTBR+16] = 83;
+[PTBR+17] = "0110";
+[PTBR+18] = -1;
+[PTBR+19] = "0000";
+
+[83*512 + 500]=0;
+
+[PROCESS_TABLE + 14*16] = 0;
+[PROCESS_TABLE + 14*16 + 1] = 14;	
+[PROCESS_TABLE + 14*16 + 4] = RUNNING;	
+[PROCESS_TABLE + 14*16 +11] = 84;	
+[PROCESS_TABLE + 14*16 +12] = 0;		
+[PROCESS_TABLE + 14*16 +13] = 8*512 ;	
+[PROCESS_TABLE + 14*16 +14] = PTBR;      
+[PROCESS_TABLE + 14*16 +15] = PTLR;
+[83*512] = [69*512 +1];
+
+SP = 8*512;
+
+PTBR=PAGE_TABLE_BASE + 20*14;
+PTLR=10;
+ireturn;
+
+
+
+
+
+
+
+

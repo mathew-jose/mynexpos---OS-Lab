@@ -1,0 +1,93 @@
+
+alias functionNo R1;
+
+//ACQUIRE_KERNEL
+if ( functionNo == 1 ) then
+
+	if ( CORE == SECONDARY_CORE ) then
+		if ( ([SYSTEM_STATUS_TABLE + 5] != 0) || ([SYSTEM_STATUS_TABLE + 7] == 1) ) then
+
+			[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 4]= READY;
+			[KERN_LOCK]=0;
+			backup;
+			call MOD_5;
+			restore;
+			backup;
+			R1=1;
+			call MOD_8;
+			restore;
+
+		endif;
+		[83*512 + 500]=0;
+		[83*512 + 502]=1;
+	else
+		[83*512 + 500]=1;
+		[83*512 + 501]=1;
+	endif;
+	if(CORE == 0) then
+	 	while( ([KERN_LOCK] == 1) || (([83*512 + 502]==1) && ([83*512 + 500] == 1)) ) do
+    			continue;
+		endwhile;
+	else
+		while( ([KERN_LOCK] == 1) || (([83*512 + 501]==1) && ([83*512 + 500] == 0)) ) do
+    			continue;
+		endwhile;
+	endif;
+	[KERN_LOCK]=1;
+
+	if ( CORE == 0 ) then
+		[83*512 + 501]=0;	
+	else
+		[83*512 + 502]=0;
+	endif;
+	return;
+endif;
+
+//ACQUIRE_SCHEDULER
+if ( functionNo == 2 ) then
+
+	 if(CORE == 1) then
+		[83*512 + 503]=0;
+		[83*512 + 504]=1;
+	else
+		[83*512 + 503]=1;
+		[83*512 + 505]=1;
+	endif;
+	if(CORE == 0) then
+	 	while( ([SCHED_LOCK] == 1) || (([83*512 + 504]==1) && ([83*512 + 503] == 1)) ) do
+    			continue;
+		endwhile;
+	else
+		while( ([SCHED_LOCK] == 1) || (([83*512 + 505]==1) && ([83*512 + 503] == 0)) ) do
+    			continue;
+		endwhile;
+	endif;
+	[SCHED_LOCK]=1;
+
+	if ( CORE == 0 ) then
+		[83*512 + 505]=0;	
+	else
+		[83*512 + 504]=0;
+	endif;
+	return;
+endif;
+
+//ACQUIRE_GLOCK
+if ( functionNo == 3 ) then
+
+	 while( tsl(GLOCK) == 1 ) do
+    		continue;
+	endwhile; 
+	return;
+endif;
+
+
+//RELEASE_LOCK
+if ( functionNo == 4 ) then
+
+	[R2]=0;
+	return;
+endif;
+
+
+

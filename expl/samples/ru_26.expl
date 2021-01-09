@@ -1,0 +1,31 @@
+int main()
+{
+decl
+    int temp, pid, a, flag, retcom,fd,temp1,temp2;
+    string input, username,chr,file,id;
+enddecl
+
+begin
+    a=0;
+    
+    
+    temp = exposcall("Read",-1,username);
+    retcom = exposcall("Getuid",username);
+    fd = exposcall("Open","root");
+    while ( a < 60 ) do
+    	temp=exposcall("Read",fd,file);
+    	temp=exposcall("Seek",fd,2);
+     	temp=exposcall("Read",fd,id);   	
+    	temp=exposcall("Seek",fd,4);
+    	if ( file != "-1")  then
+    		if( username == id ) then
+    	    			temp=exposcall("Write",-2,file);
+    	    	    	    	temp=exposcall("Delete",file);
+    	  	endif;
+    	endif;
+    	    	
+    a=a+1;	
+    endwhile;      
+    return 0;
+end
+}

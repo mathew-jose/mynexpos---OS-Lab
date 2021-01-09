@@ -1,0 +1,55 @@
+decl
+    int fd, temp, permission, data, semid, iter, pid, endval, count,s,num;
+    string filename;
+enddecl
+
+int main()
+{
+begin
+    filename="numbers.dat";
+    num=0;
+    permission=1;
+    temp = exposcall("Create",filename, permission);
+    semid = exposcall("Semget");
+    
+    fd=exposcall("Open",filename);
+    if(fd>=0) then
+        pid=exposcall("Fork");
+        pid=exposcall("Fork");
+        pid=exposcall("Fork");
+        pid=exposcall("Fork");
+            
+        if(pid<0) then
+            temp=exposcall("Write", -2, "NO PCB");
+        endif;
+            
+        pid=exposcall("Getpid");
+	
+		
+
+        temp=exposcall("SemLock", semid);
+	//write(pid);
+	data=pid*1000+1;
+        endval=data+99;
+        while(data<=endval) do
+            temp=exposcall("Write", fd, data);
+            data=data+1;
+
+        endwhile;
+        temp=exposcall("SemUnLock", semid);
+        temp=exposcall("Close", fd);
+    else
+        temp=exposcall("Write", -2, "OPEN FAIL");
+        
+    endif;
+    num=0;
+    if ( pid ==3 ) then
+    	while( num < 10000 ) do
+    		num=num+1;
+    	endwhile;	
+    endif;
+   
+    temp=exposcall("Exec", "pgm2.xsm");
+    return 0;
+end
+}

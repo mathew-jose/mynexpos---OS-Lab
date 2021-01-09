@@ -1,0 +1,6 @@
+MOV R16, "here"
+PORT P1, R16
+OUT
+BRKP
+HALT
+HALT

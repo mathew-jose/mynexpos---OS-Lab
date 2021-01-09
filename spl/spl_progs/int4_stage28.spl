@@ -1,0 +1,249 @@
+
+alias functionNo R1;
+
+functionNo = [[PTBR + 2*((SP-5)/512)]*512 + (SP-5)%512];
+alias p_table R6;
+alias currPID R5;
+alias ret R4;
+ret=[PTBR + 2*((SP-1)/512)]*512 + (SP-1)%512;
+currPID=[SYSTEM_STATUS_TABLE + 5*CORE + 1];
+p_table = PROCESS_TABLE + currPID*16;
+
+
+[p_table+13]=SP;
+SP=[p_table+11]*512-1;
+
+backup;
+R1=1;
+call MOD_8;
+
+restore;
+
+SP=[p_table+13];
+
+
+//CREATE SYSTEM CALL
+if( functionNo == 1 ) then
+
+	[p_table+13]=SP;
+	[p_table+9]=1;
+	
+	alias name R2;
+	alias i R3;
+	name = [[PTBR + 2*((SP-4)/512)]*512 + (SP-4)%512];
+	alias perm R4;
+	perm=[[PTBR + 2*((SP-3)/512)]*512 + (SP-3)%512];
+	i=0;
+	
+
+
+	// MAX_FILE_NUM=60
+	while ( i < 60 ) do
+		
+		if( name == [INODE_TABLE + i*16 + 1] ) then
+				[p_table+9]=0;
+				[ret]=0;
+				[KERN_LOCK]=0;
+				ireturn;
+		endif;
+	i=i+1;	
+	endwhile;
+	SP=[p_table+11]*512-1;
+	i=0;
+	while ( i < 60 ) do
+		
+		if( -1 == [INODE_TABLE + i*16 + 1] ) then
+				break;
+		endif;
+	i=i+1;	
+	endwhile; 
+	
+	if( i == 60 ) then
+			[p_table+9]=0;
+			SP=[p_table+13];
+			[ret]=-1;
+			[KERN_LOCK]=0;
+			ireturn;
+	
+	endif;
+	
+	
+	alias inode_entry R9;
+	alias root_entry R10;
+	
+	inode_entry=INODE_TABLE + 16*i;
+	root_entry=ROOT_FILE + 8*i;
+
+
+	
+	
+	[inode_entry + 0]= DATA;
+	[inode_entry + 1]= name;
+	[inode_entry + 2]= 0;
+	[inode_entry + 3]= [p_table+3];	
+	[inode_entry + 4]= perm;
+	[inode_entry + 8]= -1;
+	[inode_entry + 9]= -1;
+	[inode_entry + 10]= -1;
+	[inode_entry + 11]= -1;
+	
+	
+	
+	[root_entry + 0]=name;
+	[root_entry + 1]=0;
+	[root_entry + 2]=DATA;
+	[root_entry + 3]=[USER_TABLE + 2*[p_table+3]];
+	[root_entry + 4]=perm;
+	[p_table+9]=0;
+	SP=[p_table+13];
+	[ret]=0;
+	[KERN_LOCK]=0;
+	ireturn;
+	
+endif;
+
+
+
+//DELETE SYSTEM CALL
+if( functionNo == 4 ) then
+
+	[p_table+13]=SP;
+	[p_table+9]=1;
+	
+	
+	alias name R2;
+	alias i R3;
+	alias inode_index R12;
+	
+	name = [[PTBR + 2*((SP-4)/512)]*512 + (SP-4)%512];
+	i=0;
+	// MAX_FILE_NUM=60
+	while ( i < 60 ) do
+		
+		if( name == [INODE_TABLE + i*16 + 1] ) then
+				break;
+		endif;
+	i=i+1;	
+	endwhile;
+	inode_index=INODE_TABLE + i*16 ;
+	if( i == 60 ) then
+			[p_table+9]=0;
+			[ret]=-1;
+			[KERN_LOCK]=0;
+			ireturn;
+	endif;
+	
+
+	if( [inode_index+ 0] != DATA ) then
+			[p_table+9]=0;
+			[ret]=-1;
+			[KERN_LOCK]=0;
+			ireturn;
+	
+	endif;
+
+	if( [inode_index + 4] == 0 ) then
+		if( [inode_index + 3] != [p_table +3] ) then
+			if ( [p_table+3] != 1) then 
+				[p_table+9]=0;
+				[ret]=-1;
+				[KERN_LOCK]=0;
+				ireturn;
+			endif;
+		endif;
+	endif;	
+
+
+	SP=[p_table+11]*512-1;
+	backup;
+	//Acquire Inode
+	R1= 4;
+	R2=currPID;
+	R3=i;
+	call MOD_0;
+	restore;
+	
+	
+	if( [FILE_STATUS_TABLE + 4*i + 1] != -1 ) then
+	
+		backup;
+		//Release Inode
+		R1= 5;
+		R2=currPID;
+		R3=i;
+		call MOD_0;
+		restore;
+		
+		[p_table+9]=0;
+		SP=[p_table+13];
+		[ret]=-2;
+		[KERN_LOCK]=0;
+		ireturn;
+	
+	endif;
+	
+	alias j R7;
+	alias inode_entry R8;
+	alias buffer_entry R11;
+	alias root_index R13;
+	
+	j=8;
+	while ( j < 12 ) do
+	
+	
+		inode_entry=[inode_index + j] ;
+		buffer_entry=BUFFER_TABLE + (inode_entry % 4)*4 ;
+		if (  inode_entry != -1) then
+			if ( [buffer_entry] ==inode_entry ) then 	
+				if ( [buffer_entry + 1] == 1 ) then
+					[buffer_entry + 1] = 0;
+				endif;
+			endif;
+		
+			backup;
+			R1= 4;
+			R2=inode_entry;
+			R3=currPID;
+			call MOD_2;
+			restore;
+	
+		endif;
+	j=j+1;
+	endwhile;	
+
+	
+	
+	
+
+	j=0;
+	while ( j < 16 ) do
+		
+		[inode_index + j]=-1;
+		root_index=ROOT_FILE + 8*i;
+		if( j < 8 ) then
+			[root_index +j] = -1;
+		endif;
+	j=j+1;	
+	endwhile; 
+	
+	backup;
+	//Release Inode
+	R1= 5;
+	R2=currPID;
+	R3=i;
+	call MOD_0;
+	restore;
+	
+		
+	
+	[p_table+9]=0;
+	SP=[p_table+13];
+	[ret]=0;
+	[KERN_LOCK]=0;
+	ireturn;
+	
+endif;
+
+
+
+

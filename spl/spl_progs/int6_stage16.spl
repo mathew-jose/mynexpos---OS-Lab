@@ -1,0 +1,35 @@
+[PAGE_TABLE_BASE + 3]=[PAGE_TABLE_BASE + 3]+1;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 9 ]=7;
+alias userSP R0;
+userSP=SP; 
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 13]=SP;
+SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 11]*512 -1;
+
+alias fileDescriptor R2;
+alias physicalPageNo R3;
+alias offset R4;
+alias address R5;
+
+physicalPageNo=[PTBR + 2*(userSP-4)/512];
+offset=(userSP-4)%512;
+fileDescriptor=[512*physicalPageNo+ offset];
+
+if(fileDescriptor != -1) then
+	[ [PTBR + 2*(userSP-1)/512]*512 + (userSP-1)%512 ]=-1;
+else
+	//Address of Variable
+	address=[ [PTBR + 2*(userSP-3)/512]*512 + (userSP-3)%512];
+	
+	multipush(R1,R2,R3,R4,R5,R6);
+	//Function Number For Terminal Read	
+	R1=4;
+	R2=[SYSTEM_STATUS_TABLE +1];
+	R3=address;
+	call MOD_4;
+	multipop(R1,R2,R3,R4,R5,R6);	
+	[ [PTBR + 2*(userSP-1)/512]*512 + (userSP-1)%512 ]=0;
+endif;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 9 ]=0;
+SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 13];
+ireturn;

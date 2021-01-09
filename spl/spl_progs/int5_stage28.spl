@@ -1,0 +1,290 @@
+
+
+
+alias functionNo R1;
+
+alias p_table R11;
+p_table=PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE + 1]*16;
+functionNo=[[PTBR + 2*((SP-5)/512)]*512 + ((SP-5)%512)];
+[p_table + 13]=SP;
+
+alias ret R12;
+ret=[PTBR + 2*((SP-1)/512)]*512 + ((SP-1)%512);
+
+
+//OPEN SYSTEM CALL
+if(functionNo == 2) then
+
+	alias file R2;
+
+	[p_table + 9]=2;
+	file=[[PTBR + 2*((SP-4)/512)]*512 + ((SP-4)%512)];
+	SP=[p_table + 11]*512 -1;
+	
+	backup;
+	R1=1;
+	call MOD_8;
+	restore;
+	
+	
+	alias i R3;
+	alias page R13;
+	page=[p_table + 11]*512;
+	i=496;
+	
+	while ( i < 512 ) do
+		
+		if( [page+ i] == -1 ) then
+			break;
+		endif;
+	i=i+2;
+	endwhile;
+	
+	
+	if( i == 512 ) then 
+		
+		SP=[p_table + 13];
+		[ret]=-3;
+		[p_table + 9]=0;
+		[KERN_LOCK]=0;
+		ireturn;
+	endif;
+	
+	
+
+	multipush(R11,R12,R13,R3);
+	R1 = 3;
+	R2 = file;
+	call MOD_3;
+
+	if( R0 < 0 ) then
+		
+		multipop(R11,R12,R13,R3);
+		SP=[p_table + 13];
+		[ret]=R0;
+		[p_table + 9]=0;
+		[KERN_LOCK]=0;	
+		ireturn;
+	endif;
+	
+	multipop(R11,R12,R13,R3);
+	[page + i]=FILE;
+	[page + i + 1]=R0;
+		
+
+	SP=[p_table + 13];
+	[ret]=(i-496)/2;
+	[p_table + 9]=0;
+
+	[KERN_LOCK]=0;
+
+	ireturn;
+
+endif;
+
+
+//CLOSE SYSTEM CALL
+if(functionNo == 3) then
+	
+	
+	alias fd R2;
+	[p_table + 9]=3;
+	fd=[[PTBR + 2*((SP-4)/512)]*512 + ((SP-4)%512)];
+	SP=[p_table + 11]*512 -1;
+
+	backup;
+	R1=1;
+	call MOD_8;
+	restore;
+
+	
+	if( fd < 0 || fd > 7) then
+		
+		
+		SP=[p_table + 13];
+		[ret]=-1;
+		[p_table + 9]=0;
+
+		[KERN_LOCK]=0;
+		ireturn;
+
+	endif;	
+	
+	alias page R3;
+	page=[p_table + 11]*512;
+	
+ 	
+	if( [page + 496 + 2*fd] != FILE || ([page + 496 + 2*fd + 1] == -1) ) then 
+		
+		
+		SP=[p_table + 13];
+		[ret]=-1;
+		[p_table + 9]=0;
+
+		[KERN_LOCK]=0;
+		ireturn;
+	endif;
+	
+
+	backup;
+	R1 = 4; 
+	R2 = [page + 496 + 2*fd +1];
+	call MOD_3;
+	restore;
+	
+	
+	[page + 496 + 2*fd]=-1;
+	[page + 496 + 2*fd + 1]=-1;
+	
+	
+	
+	SP=[p_table + 13];
+	[ret]=0;
+	[p_table + 9]=0;
+
+	[KERN_LOCK]=0;
+	ireturn;
+
+
+
+endif;
+
+
+
+//SEEK SYSTEM CALL
+if ( functionNo == 6 ) then
+
+	alias fd R2;
+	alias off R9;
+	[p_table + 9]=6;
+	fd=[[PTBR + 2*((SP-4)/512)]*512 + ((SP-4)%512)];
+	off=[[PTBR + 2*((SP-3)/512)]*512 + ((SP-3)%512)];
+	SP=[p_table + 11]*512 -1;
+
+	backup;
+	R1=1;
+	call MOD_8;
+	restore;
+	
+
+
+
+	if( fd < 0 || fd > 7) then
+		
+		
+		SP=[p_table + 13];
+		[ret]=-1;
+		[p_table + 9]=0;
+
+		[KERN_LOCK]=0;
+
+		ireturn;
+	endif;	
+	
+	alias page R3;
+	page=[p_table + 11]*512;
+	
+ 	
+	if( [page + 496 + 2*fd] != FILE || ([page + 496 + 2*fd + 1] == -1) ) then 
+		
+		
+		SP=[p_table + 13];
+		[ret]=-1;
+		[p_table + 9]=0;
+
+		[KERN_LOCK]=0;
+
+		ireturn;
+	endif;
+	
+	
+	alias index R4;
+
+ 	
+ 	alias open_index R5;
+ 	open_index=[page + 496 + 2*fd +1];
+ 	index=[OPEN_FILE_TABLE + 4*open_index];
+ 	
+
+ 	backup;
+ 	R1=4;
+ 	R2=[SYSTEM_STATUS_TABLE + 5*CORE+ 1];
+ 	R3=index;
+ 	call MOD_0;
+
+
+ 	if ( R0 == -1 ) then
+ 		
+ 		
+ 		restore;
+ 		[p_table + 9]=0;
+		SP=[p_table + 13];
+ 		[ret]= -1;
+
+		[KERN_LOCK]=0;
+
+ 		ireturn;
+ 	endif;
+ 	restore;
+ 	alias lseek R7;
+ 	lseek=[OPEN_FILE_TABLE + 4*open_index + 2];
+ 	
+ 	alias file_size R8;
+ 	file_size=480;
+ 	if( index != INODE_ROOT ) then
+ 		file_size=[INODE_TABLE + 16*index + 2];
+
+	endif;	
+ 	if ( (lseek + off) < 0 ) then
+ 		backup;
+		R1=5;
+		R2=[SYSTEM_STATUS_TABLE + 5*CORE + 1];
+		R3=index;
+		call MOD_0;
+		restore;
+		
+		[p_table + 9]=0;
+		SP=[p_table + 13];
+ 		[ret] = -2;
+
+		[KERN_LOCK]=0;
+
+ 		ireturn;
+ 	endif;
+ 	if ( off == 0 ) then
+ 		[OPEN_FILE_TABLE + 4*open_index + 2] =0;
+ 	else
+ 		if ( (lseek + off) > file_size ) then
+ 			[OPEN_FILE_TABLE + 4*open_index + 2] = file_size;
+ 		else
+ 			[OPEN_FILE_TABLE + 4*open_index + 2] = lseek + off;
+ 		endif;
+ 	endif;	
+ 	
+ 	
+ 	backup;
+	R1=5;
+	R2=[SYSTEM_STATUS_TABLE + 5*CORE + 1];
+	R3=index;
+	call MOD_0;
+	restore;
+
+	
+
+	[p_table + 9]=0;
+	SP=[p_table + 13];
+	[ret]= 0;
+
+	[KERN_LOCK]=0;
+
+	ireturn;
+
+endif;
+	
+	
+
+
+
+
+
+

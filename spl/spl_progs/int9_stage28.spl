@@ -1,0 +1,163 @@
+
+
+alias userSP R10;
+userSP = SP;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 +13]=SP;
+SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 +11]*512 - 1;
+
+backup;
+R1=1;
+call MOD_8;
+restore;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 +9]=9;
+alias filename R1;
+filename=[ [PTBR + 2*(userSP-4)/512]*512 + (userSP-4)%512 ];
+
+alias index R8;
+index=0;
+
+
+//MAX_FILE_NUM=60
+
+
+while( index < 60 ) do 
+	if( [INODE_TABLE + 16*index + 1] == filename ) then
+		if( [INODE_TABLE + 16*index + 0] == EXEC ) then
+			break;
+		endif;
+	endif;
+index=index+1;
+endwhile;
+
+if( index == 60) then
+	[ [PTBR + 2*(userSP-1)/512]*512 + (userSP-1)%512 ]=-1;
+	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 +9]=0;
+	SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 +13];
+	[KERN_LOCK]=0;
+	ireturn;
+endif;
+
+[ [PTBR + 2*(userSP-1)/512]*512 + (userSP-1)%512 ]=0;
+backup;
+	R1=3;
+	R2=[SYSTEM_STATUS_TABLE + 5*CORE  +1];
+	call MOD_1;
+restore;
+
+alias user_area_page R3;
+user_area_page=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 +11];
+[MEMORY_FREE_LIST + user_area_page] = [MEMORY_FREE_LIST + user_area_page] + 1;
+SP=user_area_page*512 -1;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 4] = RUNNING;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 7] = index;
+
+PTBR= PAGE_TABLE_BASE + 20*[SYSTEM_STATUS_TABLE + 5*CORE  +1];
+//Library
+[PTBR+ 0] = 63;
+[PTBR+ 1] = "0100";
+[PTBR+ 2] = 64;
+[PTBR+ 3] = "0100";
+
+
+
+
+[PTBR+ 4] = -1;
+[PTBR+ 5] = "0000";
+
+
+
+[PTBR+ 6] = -1;
+[PTBR+ 7] = "0000";
+
+backup;
+R1=1;
+R2=[SYSTEM_STATUS_TABLE + 5*CORE +1];
+
+call  MOD_2;
+[PTBR+ 16] = R0;
+[PTBR+ 17] = "0110";
+restore;
+
+backup;
+R1=1;
+R2=[SYSTEM_STATUS_TABLE + 5*CORE +1];
+
+call  MOD_2;
+[PTBR+ 18] = R0;
+[PTBR+ 19] = "0110";		 
+restore;
+//Per Process Table
+
+
+backup;
+alias i R7;
+i=512-16;
+
+while (i < 512 ) do
+	[user_area_page*512 + i]=-1;
+	i=i+1;
+endwhile;
+restore;
+
+
+if ([INODE_TABLE + index*16 + 8] != -1) then 
+
+	backup;
+	R1 = GET_CODE_PAGE;
+	R2 = [INODE_TABLE + index*16 + 8];
+	R3 = [SYSTEM_STATUS_TABLE + 5*CORE + 1];
+	call MOD_2;
+	[PTBR + 8] = R0;
+	[PTBR + 9] = "0100";
+	restore;
+endif;
+
+
+	[PTBR+ 10] = -1;
+	[PTBR+ 11] = "0000";	
+	[PTBR+ 12] = -1;
+	[PTBR+ 13] = "0000";	
+	[PTBR+ 14] = -1;
+	[PTBR+ 15] = "0000";	
+
+
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 0] = -1;
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 1] = -1;
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 2] = -1;
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 3] = -1;
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 4] = [INODE_TABLE + index*16 + 8];
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 5] = [INODE_TABLE + index*16 + 9];
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 6] = [INODE_TABLE + index*16 + 10];
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 7] = [INODE_TABLE + index*16 + 11];
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 8] = -1;
+[DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE +1]*10 + 9] = -1;
+
+[KERN_LOCK]=0;
+[ [PTBR+16]*512 ] = [ [PTBR+8]*512+1 ];
+
+SP = 8*512;
+
+
+ireturn;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

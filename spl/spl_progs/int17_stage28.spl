@@ -1,0 +1,115 @@
+
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 9]=27;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 13]=SP;
+
+alias name R2;
+alias pass R3;
+
+
+name = [[PTBR + 2*((SP-4)/512) ]*512 + ((SP-4)%512) ];
+pass = [[PTBR + 2*((SP-3)/512) ]*512 + ((SP-3)%512) ];
+SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 11]*512 - 1;
+
+backup;
+R1=1;
+call MOD_8;
+restore;
+
+
+if ([SYSTEM_STATUS_TABLE + 5*CORE  + 1] != 1) then
+	SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 13];
+	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 9]=0;
+	[[PTBR + 2*((SP-1)/512) ]*512 + ((SP-1)%512) ] = -2;
+	[KERN_LOCK]=0;
+	ireturn;
+endif;
+
+
+
+alias i R1;
+i=0;
+
+while ( i < 16 ) do
+
+	if ( [USER_TABLE + 2*i ] == name ) then
+		break;
+	endif;
+
+i=i+1;
+endwhile;
+
+
+if (i == 16) then
+	SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 13];
+	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 9]=0;
+	[[PTBR + 2*((SP-1)/512) ]*512 + ((SP-1)%512) ] = -1;
+	[KERN_LOCK]=0;
+	ireturn;
+endif;
+
+
+encrypt pass;
+
+
+if ( [USER_TABLE + 2*i + 1] != pass) then
+	SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 13];
+	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 9]=0;
+	[[PTBR + 2*((SP-1)/512) ]*512 + ((SP-1)%512) ] = -1;
+	[KERN_LOCK]=0;
+	ireturn;
+endif;
+
+[PROCESS_TABLE + 16*2 + 4]=CREATED;
+[PROCESS_TABLE + 16*2 + 3]=i;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 4]=WAIT_PROCESS;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 5*CORE  + 1]*16 + 5]=2;
+
+[SYSTEM_STATUS_TABLE ]=i;
+[KERN_LOCK]=0;
+backup;
+call MOD_5;
+restore;
+backup;
+R1=1;
+call MOD_8;
+restore;
+
+
+
+SP=[PROCESS_TABLE + 1*16 + 13];
+[PROCESS_TABLE + 1*16 + 9]=0;
+[[PAGE_TABLE_BASE + 20 + 2*((SP-1)/512) ]*512 + ((SP-1)%512) ] = 0;
+[KERN_LOCK]=0;
+ireturn;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

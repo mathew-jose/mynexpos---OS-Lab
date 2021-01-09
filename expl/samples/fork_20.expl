@@ -1,0 +1,22 @@
+int main(){
+
+decl
+	int temp,ret;
+enddecl
+begin
+
+	temp=exposcall("Fork");
+	if ( temp == -1 ) then
+		ret = exposcall("Write",-2,"Fork Fail");
+	endif;
+	if ( temp != 0 ) then
+		ret = exposcall("Exec","even_20.xsm");
+	endif;
+		if ( temp == 0 ) then
+		ret = exposcall("Exec","odd_20.xsm");
+	endif;
+return 0;
+end
+
+}
+
