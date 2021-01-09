@@ -1,0 +1,181 @@
+//GET FREE PAGE
+if(R1 == 1) then
+	[SYSTEM_STATUS_TABLE+3] = [SYSTEM_STATUS_TABLE+3] + 1;
+
+	while([SYSTEM_STATUS_TABLE+2] == 0) do
+		breakpoint;
+		[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 4] = WAIT_MEM;
+		backup;
+		call MOD_5;
+		restore; 
+	endwhile;
+	[SYSTEM_STATUS_TABLE + 3] = [SYSTEM_STATUS_TABLE + 3]-1;
+	[SYSTEM_STATUS_TABLE + 2] = [SYSTEM_STATUS_TABLE + 2]-1;
+	
+
+	
+	alias i R4;
+	alias j R5;
+i=0;
+j=0;
+
+
+while (i<128) do
+	if([MEMORY_FREE_LIST+i] != 0) then
+	
+	j=j+1;	
+	
+	endif;
+i=i+1;
+endwhile;
+if( (j+1) > [PAGE_TABLE_BASE]) then	
+	[PAGE_TABLE_BASE]=j+1;
+endif;
+	i = 65;
+	
+
+	
+//MAX_MEM_PAGE = 128
+
+	while(i<128) do
+		if([MEMORY_FREE_LIST+i]==0) then
+			[MEMORY_FREE_LIST+i] = 1;
+			R0=i;
+			break;
+		endif;
+		i = i + 1;
+	endwhile;
+	return;
+
+endif;
+
+
+//RELEASE PAGE
+if(R1 ==2) then
+	backup;
+	[MEMORY_FREE_LIST + R2] = [MEMORY_FREE_LIST + R2] - 1;
+	if([MEMORY_FREE_LIST + R2] == 0) then
+		[SYSTEM_STATUS_TABLE+2] = [SYSTEM_STATUS_TABLE+2]+1;
+	endif;
+	alias i R4;
+	i = 0;
+	if( [SYSTEM_STATUS_TABLE+2] > 0) then
+	while(i<16) do
+		if([PROCESS_TABLE+16*i+4] == WAIT_MEM) then
+			[PROCESS_TABLE+16*i+4] = READY;
+		endif;
+		i = i + 1;
+	endwhile;
+	endif;
+	restore;			
+	return;
+endif;
+
+
+
+//GET CODE PAGE
+if( R1 == 5 ) then
+
+	alias i R3;
+	alias j R4;
+	alias disk_block R2;
+	i=0;
+	j=2;
+	
+	while (i < 16 ) do 
+		j=2;
+		while( j < 8 ) do
+	 		if( [DISK_MAP_TABLE + 10*i + j] == disk_block ) then 
+	 			if( [PAGE_TABLE_BASE + 20*i + 2*j ] != -1 ) then
+	 				R0 = [PAGE_TABLE_BASE + 20*i + 2*j ];
+	 				[MEMORY_FREE_LIST + R0] = [MEMORY_FREE_LIST + R0] + 1;
+					return;
+				endif;
+			endif;
+			j=j+1;
+		endwhile;
+	i=i+1;
+	endwhile;
+	
+
+	R1=1;
+	call MOD_2;
+
+	R1 = 2;
+	R4 = disk_block;
+	R2 = [SYSTEM_STATUS_TABLE+1];
+	R3 = R0;
+	call MOD_4;
+	return;
+
+endif;
+
+
+//RELEASE BLOCK
+if(R1 == 4) then
+	[DISK_FREE_LIST + R2] = [DISK_FREE_LIST + R2] - 1;
+	return;
+endif;
+
+
+//GET FREE BLOCK
+if(R1 == 3) then
+	alias i R0;
+	i=DISK_FREE_AREA;
+	
+	while ( i <= (DISK_SWAP_AREA -1 ) ) do
+		if ( [DISK_FREE_LIST + i] == 0 ) then 
+			[DISK_FREE_LIST + i] =1;
+			return;
+		endif;
+	i=i+1;
+	endwhile;	
+	R0=-1;
+	return;
+endif;
+
+
+
+//GET SWAP BLOCK
+if(R1 == 6) then
+	alias i R0;
+	i=DISK_SWAP_AREA;
+	
+	while ( i <= (DISK_SIZE -1 ) ) do
+		if ( [DISK_FREE_LIST + i] == 0 ) then 
+			[DISK_FREE_LIST + i] =1;
+			return;
+		endif;
+	i=i+1;
+	endwhile;	
+	R0=-1;
+	return;
+endif;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+	
+	

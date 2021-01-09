@@ -1,0 +1,24 @@
+int main()
+{
+decl
+    int temp, pid, a, flag, retcom;
+    string input, username;
+enddecl
+
+begin
+    a=0;
+    temp = exposcall("Write",-2,"Usernames");
+    while(a < 16) do
+
+            retcom = exposcall("Getuname",a,a);
+            if(retcom != -1) then
+			
+	    	        temp = exposcall("Write",-2,retcom);
+
+            endif;
+    a=a+1;
+    endwhile;
+          
+    return 0;
+end
+}

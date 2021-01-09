@@ -1,0 +1,17 @@
+int main ()
+{
+decl
+    int temp, pid, a;
+enddecl
+begin
+    
+            temp= exposcall("Fork");
+            temp= exposcall("Fork");
+            temp= exposcall("Fork");
+            temp= exposcall("Fork");
+            temp= exposcall("Exec","gpid_21.xsm");
+return 0;
+end
+}
+
+

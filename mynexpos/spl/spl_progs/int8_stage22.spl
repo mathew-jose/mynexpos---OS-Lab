@@ -1,0 +1,199 @@
+[PAGE_TABLE_BASE + 3]=[PAGE_TABLE_BASE + 3]+1;
+[PROCESS_TABLE +[SYSTEM_STATUS_TABLE+1]*16 +9]=8;
+[PROCESS_TABLE +[SYSTEM_STATUS_TABLE+1]*16 +13]=SP;
+SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE+1]*16 +11]*512 - 1;
+
+
+
+//GET PID
+R1=1;
+call MOD_1;
+//NO FREE PID
+if( R0 == -1 ) then
+ 	SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE+1]*16 +13];
+ 	[[PTBR + 2*((SP-1)/512)]*512 + (SP-1)%512] = -1;
+ 	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE+1]*16 +9]=0;
+ 	ireturn;
+endif;
+
+
+//ALLOCATE HEAP PAGES
+if([PTBR+4] == -1) then		
+		backup;
+		R1=1;
+		R2=[SYSTEM_STATUS_TABLE+1];
+		call MOD_2;
+		[PTBR + 4]= R0;
+		[PTBR + 5] = "0110";
+		R1=1;
+		R2=[SYSTEM_STATUS_TABLE+1];
+		call MOD_2;
+		[PTBR + 6]= R0;
+		[PTBR + 7] = "0110";
+		restore;
+endif;
+
+
+
+alias c_pid R7;
+alias parent_table R8;
+parent_table=PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+alias child_table R9;
+child_table=PROCESS_TABLE + R0*16;
+alias parent_page R10;
+parent_page=PAGE_TABLE_BASE + [SYSTEM_STATUS_TABLE + 1]*20 ;
+c_pid=R0;
+alias child_page R11;
+child_page=PAGE_TABLE_BASE + c_pid*20;
+
+
+
+
+
+backup;
+	R1=1;
+	R2=[SYSTEM_STATUS_TABLE+1];
+	call MOD_2;
+	[child_page +16] = R0;
+	[child_page + 17] = "0110";
+restore;
+backup;
+	
+	//Stack Pages
+	R1=1;
+	R2=[SYSTEM_STATUS_TABLE+1];
+	call MOD_2;
+	[child_page +18] = R0;
+	[child_page + 19] = "0110";
+
+restore;
+backup;
+
+	R1=1;
+	R2=[SYSTEM_STATUS_TABLE+1];
+	call MOD_2;
+	[PROCESS_TABLE + c_pid *16 + 11] = R0;
+restore;
+
+//USERID COPY
+[child_table + 3] = [parent_table+ 3];
+//SWAP FLAG
+[child_table + 6] = [parent_table+ 6];
+//INODE INDEX
+[child_table + 7] = [parent_table+ 7];
+//USER AREA SWAP STATUS
+[child_table + 10] = [parent_table+ 10];
+//USER AREA STACK
+[child_table + 13] = [parent_table+ 13];
+
+//TICK
+[child_table + 0] = 0;
+//MODE FLAG
+[child_table + 9] = 0;
+//KERNEL STACK POINTER
+[child_table + 12] = 0;
+//TICK
+[child_table + 1] = c_pid;
+//TICK
+[child_table + 2] = [SYSTEM_STATUS_TABLE +1];
+//TICK
+[child_table + 4] = CREATED;
+
+
+
+	alias i R1;
+	i = 496;
+	while(i < 512) do
+		[[child_table +11]*512 + i] = [[parent_table +11]*512 + i];
+		i = i+1;
+	endwhile;
+
+
+	i = 2;
+	while(i < 8) do
+		[DISK_MAP_TABLE + c_pid*10 + i] = [DISK_MAP_TABLE + [SYSTEM_STATUS_TABLE +1]*10 + i];
+		i = i+1;
+	endwhile;
+	
+	[DISK_MAP_TABLE + c_pid*10 + 8] = -1;
+	[DISK_MAP_TABLE + c_pid*10 + 9] = -1;
+i = 0;
+while(i < 16) do
+	[child_page + i] = [parent_page + i];	
+	i = i+1;
+endwhile;
+
+i=0;
+while(i < 16) do
+	if( [child_page + i] !=  -1 ) then
+		[MEMORY_FREE_LIST + [child_page + i]]  = [MEMORY_FREE_LIST + [child_page + i]] +1;
+	endif;
+	i = i+2;
+endwhile;
+
+
+
+
+i=0;
+
+while( i < 512 ) do
+	[[child_page + 16]*512 + i] = [[parent_page + 16]*512 +i];
+	[[child_page + 18]*512 + i] = [[parent_page + 18]*512 +i];
+
+	i=i+1;
+endwhile;
+
+
+[[child_table + 11]*512] = BP;
+
+
+
+
+//Semaphore Table
+
+i=496;
+while ( i < 512 ) do
+	[[child_table + 11]*512 + i]=[[parent_table+ 11]*512 + i];
+	[[child_table + 11]*512 + i + 1]=[[parent_table+ 11]*512 + i + 1];
+	if( [[parent_table+ 11]*512 + i] == SEMAPHORE ) then
+		
+		[SEMAPHORE_TABLE + 4*[[parent_table+ 11]*512 + i + 1] + 1] = [SEMAPHORE_TABLE + 4*[[parent_table+ 11]*512 + i + 1]+ 1] + 1;
+
+	endif;
+i=i+2;
+endwhile;
+
+
+alias parentSP R2; 
+alias childSP R3;
+parentSP = [parent_table+13];
+childSP = [child_table +13];
+
+
+[[PTBR + 2*((parentSP-1)/512)]*512 + (parentSP-1)%512]=c_pid;
+[[child_page + 2*((childSP-1)/512)]*512 + (childSP-1)%512]=0;
+
+
+SP = [parent_table + 13];
+[parent_table + 9] = 0;
+
+
+
+ireturn;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

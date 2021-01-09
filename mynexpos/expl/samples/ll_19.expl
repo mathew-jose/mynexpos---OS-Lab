@@ -1,0 +1,58 @@
+type
+  List
+  {
+    int data;
+    List next;
+  }
+endtype
+
+decl
+    List head;
+
+enddecl
+
+int main()
+{
+  decl
+    int n,temp,x;
+    List a,q;
+  enddecl
+
+  begin
+    x = initialize();
+    
+    head=null;
+    q=null;
+    temp=exposcall("Write",-2,"Size"); 
+    temp=exposcall("Read",-1,n); 
+    temp=exposcall("Write",-2,"Elements"); 
+    while (n!=0)  do
+      	temp=exposcall("Read",-1,x); 
+      	a=alloc();
+      	a.data=x;
+     	a.next=null;
+     	
+
+      	if (head==null) then
+      		head=a;
+      		q=a;
+      
+      
+      	else
+      		q.next=a;
+      		q=q.next;
+      	endif;
+      
+      	n=n-1;
+    endwhile;
+
+    a=head;
+    temp=exposcall("Write",-2,"List Below "); 
+    while(a!=null)  do
+      temp=exposcall("Write",-2,a.data); 
+      a=a.next;
+    endwhile;
+    return 1;
+  end
+}
+

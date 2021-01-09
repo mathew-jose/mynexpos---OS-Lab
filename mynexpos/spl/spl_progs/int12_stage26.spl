@@ -1,0 +1,69 @@
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9]=28;
+
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13]=SP;
+
+
+
+SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 11]*512 - 1;
+
+
+if ([SYSTEM_STATUS_TABLE + 1] != 2) then
+	SP=[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13];
+	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 9]=0;
+	[[PTBR + 2*((SP-1)/512) ]*512 + ((SP-1)%512) ] = -1;
+	ireturn;
+endif;
+
+
+//KILL ALL
+backup;
+R1=5;
+R2=[SYSTEM_STATUS_TABLE + 1];
+call MOD_1;
+restore;
+
+
+[PROCESS_TABLE + 16*2 + 4]=TERMINATED;
+
+
+[[PTBR + 16]*512] = [[PTBR + 8]*512 + 1];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 13]=4096;
+
+
+
+[PROCESS_TABLE + 16*1 + 4]=READY;
+[SYSTEM_STATUS_TABLE]=0;
+
+
+call MOD_5;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

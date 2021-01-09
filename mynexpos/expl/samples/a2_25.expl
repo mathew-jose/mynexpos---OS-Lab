@@ -1,0 +1,38 @@
+int main()
+{
+decl
+
+int fd,temp,temp1,temp2,permission,i,j;
+str file,chr;
+enddecl
+begin
+
+
+	fd=exposcall("Open","file.dat");
+	
+	temp = exposcall("Seek", fd, 0);
+	temp = exposcall("Seek", fd, 1100);
+	
+	i=2000;
+	while ( i < 2516 ) do
+	
+	temp=exposcall("Write",fd,i);
+	i=i+1;
+	endwhile;
+	
+	j=0;
+	while ( j <= 1615) do 
+		temp2=exposcall("Read",fd,chr);
+		temp1=exposcall("Write",-2,chr);
+		temp = exposcall("Seek", fd, -2);
+	j=j+1;
+	endwhile;
+	
+	temp = exposcall("Close",fd);
+
+
+return 0;
+
+end
+}
+

@@ -1,0 +1,54 @@
+alias functionNum R1;
+alias currentPID R2;
+
+// Acquire Terminal
+if(functionNum == 8) then 
+	while ([TERMINAL_STATUS_TABLE]==1) do
+		[PROCESS_TABLE + 16*currentPID + 4]=WAIT_TERMINAL;
+		multipush(R1,R2,R3,R4,R5);
+		call MOD_5;
+		multipop(R1,R2,R3,R4,R5);
+	endwhile;		
+	[TERMINAL_STATUS_TABLE]=1;
+	[TERMINAL_STATUS_TABLE+1]=currentPID;	
+
+	return;
+
+
+endif;
+
+// Release Terminal
+if(functionNum == 9) then 
+	if([TERMINAL_STATUS_TABLE+1]!=currentPID) then
+		R0=-1;
+
+		return;
+	endif;
+	[TERMINAL_STATUS_TABLE]=0;
+	alias id R6;
+	id=0;
+	while(id<16) do
+		if([PROCESS_TABLE + id*16 + 4]==WAIT_TERMINAL) then 
+			[PROCESS_TABLE + id*16 + 4]=READY;
+		endif;
+		id=id+1;
+	endwhile;
+	R0=0;
+
+	return;
+endif;
+	
+//Acquire Disk
+if(functionNum ==3) then 
+
+	while( [DISK_STATUS_TABLE]==1) do
+		[PROCESS_TABLE + 16*currentPID +4]=WAIT_DISK;
+		backup;
+		call MOD_5;
+		restore;
+	endwhile;
+	[DISK_STATUS_TABLE]=1;
+	[DISK_STATUS_TABLE +4]=currentPID;		
+	return;	
+endif;	
+		

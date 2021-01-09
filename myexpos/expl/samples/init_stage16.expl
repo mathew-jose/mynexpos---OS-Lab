@@ -1,0 +1,44 @@
+decl
+	int a[100],n;
+enddecl
+
+int main()
+{
+decl
+    int temp,swap,i,j,k;
+enddecl
+begin
+	temp = exposcall ( "Write" , -2, "Size of Array");	
+	temp = exposcall ( "Read" ,-1, n);
+	temp = exposcall ( "Write" , -2, "Enter Elements");	
+	i=0;
+	while(i<n) do 
+		temp = exposcall ( "Read" ,-1, a[i]);
+		i=i+1;
+	endwhile;
+	i=0;
+	j=0;
+	while(i<n) do
+		j=0;
+		while(j<(n-1)) do
+			if(a[j+1]<a[j]) then
+				swap=a[j];
+				a[j]=a[j+1];
+				a[j+1]=swap;
+			endif;
+		j=j+1;
+		endwhile;
+	i=i+1;
+	endwhile;
+	i=0;
+	temp = exposcall ( "Write" , -2, "Sorted Array");		
+	while(i<n) do 
+		temp = exposcall ( "Write" ,-2, a[i]);
+		i=i+1;
+	endwhile;
+
+				
+
+    return 0;
+end
+}

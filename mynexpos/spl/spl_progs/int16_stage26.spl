@@ -1,0 +1,290 @@
+alias functionNo R1;
+
+
+functionNo=[[PTBR + 2*((SP-5)/512) ]*512 + ((SP-5)%512) ];
+alias p_table R6;
+p_table =PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16;
+
+alias ret R7;
+ret=[PTBR + 2*((SP-1)/512) ]*512 + ((SP-1)%512); 
+
+alias name R2;
+name=[[PTBR + 2*((SP-4)/512) ]*512 + ((SP-4)%512) ];
+alias pass R3;
+pass=[[PTBR + 2*((SP-3)/512) ]*512 + ((SP-3)%512) ];
+
+alias user_stack R8;
+user_stack=p_table + 13;
+
+alias mode R9;
+mode=p_table + 9;	
+
+[user_stack]=SP;
+SP=[p_table + 11]*512 - 1;
+
+if ( functionNo == 22 ) then
+
+	[mode]=22;
+
+	
+	if (([SYSTEM_STATUS_TABLE + 1] != 2) || ([p_table + 3] != 1)) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -2;
+		ireturn;
+	endif;
+	
+	alias i R4;
+	i=0;
+	while ( i < 16 ) do
+	
+		if( [USER_TABLE + 2*i ] == name ) then
+			SP=[user_stack];
+			[mode]=0;
+			[ret] = -1;
+			ireturn;
+		endif;
+	
+	i=i+1;
+	endwhile;
+	
+	i=0;
+	while ( i < 16 ) do
+	
+		if( [USER_TABLE + 2*i ] == -1 ) then
+			break;
+		endif;
+	
+	i=i+1;
+	endwhile;
+	
+	if (i == 16) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -3;
+		ireturn;
+	endif;
+
+
+	encrypt pass;
+	[USER_TABLE + 2*i]=name;
+	[USER_TABLE + 2*i + 1]=pass;
+	
+	[mode]=0;
+	
+	SP=[user_stack];
+	[mode]=0;
+	[ret] = 0;
+	ireturn;
+
+endif;
+
+
+if ( functionNo == 23 ) then
+
+	[mode]=23;
+
+
+	
+	if (([SYSTEM_STATUS_TABLE + 1] != 2) || ([p_table + 3] != 1)) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -2;
+		ireturn;
+	endif;
+	
+	
+	if (name == "root" || name == "kernel" ) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -2;
+		ireturn;
+	endif;
+	
+	alias i R4;
+	i=0;
+	while ( i < 16 ) do
+	
+		if( [USER_TABLE + 2*i ] == name ) then
+			break;
+		endif;
+	
+	i=i+1;
+	endwhile;
+	
+	
+	if (i == 16) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -1;
+		ireturn;
+	endif;
+	
+	alias j R5;
+	j=0;
+	while ( j < 60 ) do
+		if( [ROOT_FILE + 8*j + 3] == name ) then
+			SP=[user_stack];
+			[mode]=0;
+			[ret] = -3;
+			ireturn;
+		endif;
+	j=j+1;
+	endwhile; 
+	
+	
+	
+	[USER_TABLE + 2*i]=-1;
+	[USER_TABLE + 2*i + 1]=-1;
+	
+	[mode]=0;
+	
+	SP=[user_stack];
+	[mode]=0;
+	[ret] = 0;
+	ireturn;
+
+endif;
+
+if ( functionNo == 24 ) then
+
+	[mode]=24;
+	
+	
+	
+	if (([SYSTEM_STATUS_TABLE + 1] != 2) ) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -1;
+		ireturn;
+	endif;
+	
+	alias i R4;
+	i=0;
+	while ( i < 16 ) do
+	
+		if( [USER_TABLE + 2*i ] == name ) then
+			break;
+		endif;
+	
+	i=i+1;
+	endwhile;
+	
+	if (i == 16) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -2;
+		ireturn;
+	endif;
+	
+	
+	if ( [p_table + 3] != i ) then
+		if ( [p_table + 3] != 1 ) then
+			SP=[user_stack];
+			[mode]=0;
+			[ret] = -2;
+			ireturn;
+		endif;	
+	endif;
+
+	encrypt pass;
+	[USER_TABLE + 2*i + 1]=pass;
+	
+	[mode]=0;
+	
+	SP=[user_stack];
+	[mode]=0;
+	[ret] = 0;
+	ireturn;
+
+endif;
+
+
+
+if ( functionNo == 26 ) then
+
+	[mode]=26;
+
+
+	
+	alias i R4;
+	i=0;
+	while ( i < 16 ) do
+		if( [USER_TABLE + 2*i ] == name ) then
+			SP=[user_stack];
+			[mode]=0;
+			[ret] = i;
+			ireturn;
+		endif;
+	
+	i=i+1;
+	endwhile;
+	
+	SP=[user_stack];
+	[mode]=0;
+	[ret] = -1;
+	ireturn;
+	
+
+endif;
+
+
+
+if ( functionNo == 25 ) then
+
+	[mode]=25;
+	if ( name < 0 || name > 15 ) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -1;
+		ireturn;
+	endif;
+	
+	
+	if ( [USER_TABLE + 2*name] == -1 ) then
+		SP=[user_stack];
+		[mode]=0;
+		[ret] = -1;
+		ireturn;
+	endif;
+	
+	
+	
+	
+	
+	
+	
+	
+	SP=[user_stack];
+	[mode]=0;
+	[ret] = [USER_TABLE + 2*name];
+	ireturn;
+	
+
+endif;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

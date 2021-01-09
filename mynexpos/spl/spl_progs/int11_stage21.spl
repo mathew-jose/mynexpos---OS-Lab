@@ -1,0 +1,99 @@
+[PAGE_TABLE_BASE + 3]=[PAGE_TABLE_BASE + 3]+1;
+alias functionNo R1;
+
+functionNo = [[PTBR + 2*(SP-5)/512]*512 + (SP-5)%512];
+[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13]=SP;
+SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 11]*512-1;
+
+
+//WAIT SYSTEM CALL
+if( functionNo == 13 ) then
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=13;
+	alias pid R2;
+	pid = [[PTBR + 2*([PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13]-4)/512]*512 + ([PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13]-4)%512];
+	if( (pid == [SYSTEM_STATUS_TABLE +1]) || ([PROCESS_TABLE + pid*16 + 4] == TERMINATED ) || (pid < 0) || (pid > 15 ) ) then 
+			[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=0;
+			SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13];
+			[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=-1;
+			ireturn;
+	endif;
+	
+	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 4 ] = WAIT_PROCESS;
+	[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1]*16 + 5 ] = pid;
+
+	backup;
+	call MOD_5;
+	restore;
+	
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=0;
+	SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13];
+	[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=0;	
+	
+	ireturn;
+endif;
+
+
+
+//SIGNAL SYSTEM CALL
+if ( functionNo == 14 ) then
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=14;
+	alias i R3;
+	i=0;
+	while ( i < 16 ) do
+			if( ([PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4]==WAIT_PROCESS) || ([PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 5] == [SYSTEM_STATUS_TABLE + 1])) then
+				[PROCESS_TABLE + [SYSTEM_STATUS_TABLE + 1]*16 + 4]=READY;
+			endif;	
+	i=i+1;
+	endwhile;
+		
+	[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=0;
+	SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13];
+	[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=0;	
+	ireturn;
+endif;
+
+
+//GETPID SYSTEM CALL
+if ( functionNo == 11 ) then
+		[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=11;
+		SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13];
+		[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 1];
+		[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=0;
+		ireturn;
+endif;		
+	
+	
+//GETPPID SYSTEM CALL
+if ( functionNo == 12 ) then
+		[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=12;
+		SP=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 13];
+		[[PTBR + 2*(SP-1)/512]*512 + (SP-1)%512]=[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 2];
+		[PROCESS_TABLE +[SYSTEM_STATUS_TABLE +1]*16 + 9]=0;
+		ireturn;
+endif;	
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	
+
+

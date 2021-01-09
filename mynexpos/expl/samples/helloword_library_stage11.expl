@@ -1,0 +1,13 @@
+
+int main()
+{
+decl
+int temp;
+enddecl
+begin
+	temp=exposcall("Write",-2,"Hello World");
+	temp=exposcall("Write",-2,"It Works");
+return 0;
+
+end
+}

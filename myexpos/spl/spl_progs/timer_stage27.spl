@@ -1,0 +1,85 @@
+
+[PAGE_TABLE_BASE + 3]= [PAGE_TABLE_BASE + 3] + 1;
+[PROCESS_TABLE + ( [SYSTEM_STATUS_TABLE + 1] * 16) + 13] = SP;
+SP = [PROCESS_TABLE + ([SYSTEM_STATUS_TABLE + 1] * 16) + 11] * 512 - 1;
+backup;
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1] * 16 + 4] = READY;
+
+alias i R1;
+if ([SYSTEM_STATUS_TABLE + 5] != 0) then
+	if( ([SYSTEM_STATUS_TABLE + 1] == 15) && ( [SYSTEM_STATUS_TABLE + 5] == 1 )) then
+	
+		backup;
+		R1=1;
+		R2=[SYSTEM_STATUS_TABLE+1];
+		call MOD_6;
+		restore;
+	endif;
+	
+	if( ([SYSTEM_STATUS_TABLE + 1] == 15) && ( [SYSTEM_STATUS_TABLE + 5] == 2 )) then
+	
+		backup;
+		R1=2;
+		R2=[SYSTEM_STATUS_TABLE+1];
+		call MOD_6;
+		restore;
+	endif;
+	
+	if( ([SYSTEM_STATUS_TABLE + 1] == 0) ) then
+		
+		i=0;
+		while ( i < 16 ) do
+			if ( [PROCESS_TABLE + 16*i + 4] != TERMINATED ) then
+				[PROCESS_TABLE + 16*i]=[PROCESS_TABLE + 16*i] + 1;
+			endif;
+			i=i+1;
+		endwhile;
+		call MOD_5;
+		restore;
+		SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1] * 16 + 13];
+		[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1] * 16 + 9] = 0;
+		ireturn;
+		
+	endif;
+	
+else
+	if ( [SYSTEM_STATUS_TABLE + 2] < MEM_LOW ) then
+		[SYSTEM_STATUS_TABLE + 5]=1;
+
+	endif;
+	
+	if ( [SYSTEM_STATUS_TABLE + 4] != 0 ) then
+	//	i=3;
+	//	while ( i < 15 ) do 
+	//		if ( ([PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1] * 16] > MAX_TICK ) && ([PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1] * 16 + 6] == 1)  ) then
+	//			[SYSTEM_STATUS_TABLE + 5]=2;
+	//			break;
+	//		endif;	
+	//	i=i+1;
+	//	endwhile;
+		
+		if ( [SYSTEM_STATUS_TABLE + 2] > MEM_HIGH ) then
+						[SYSTEM_STATUS_TABLE + 5]=2;
+		endif;
+	
+	endif;
+
+endif;
+
+
+
+i=0;
+while ( i < 16 ) do
+	if ( [PROCESS_TABLE + 16*i + 4] != TERMINATED ) then
+		[PROCESS_TABLE + 16*i]=[PROCESS_TABLE + 16*i] + 1;
+	endif;
+	i=i+1;
+endwhile;
+
+call MOD_5;
+restore;
+SP = [PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1] * 16 + 13];
+[PROCESS_TABLE + [SYSTEM_STATUS_TABLE+1] * 16 + 9] = 0;
+ireturn;
+
+

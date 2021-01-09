@@ -1,0 +1,10 @@
+[PAGE_TABLE_BASE + 3]=[PAGE_TABLE_BASE + 3]+1;
+print "Max Memory Usage";
+print [PAGE_TABLE_BASE];
+print "Disk Accesses";
+print [PAGE_TABLE_BASE+1];
+print "Context Switch";
+print [PAGE_TABLE_BASE+2];
+print "Kernel Switch";
+print [PAGE_TABLE_BASE+3];
+halt;
